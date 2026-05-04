@@ -1,0 +1,40 @@
+# .NET
+**/bin/
+**/obj/
+**/.vs/
+*.user
+*.suo
+
+# Node
+**/node_modules/
+**/dist/
+
+# Flutter
+**/.dart_tool/
+**/.flutter-plugins*
+**/build/
+**/.packages
+
+# Uploads
+uploads/
+backups/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Scratch / notes (root-level only)
+/*.txt
