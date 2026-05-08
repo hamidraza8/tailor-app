@@ -305,6 +305,75 @@ class DataService {
     return id;
   }
 
+  // ─── Online mode: order operations by server ID ───
+
+  static Future<Order?> getOrderByServerId(String serverId) async {
+    final result = await ApiService.get('/orders/$serverId');
+    if (result['success'] == true) {
+      return Order.fromJson(result);
+    }
+    return null;
+  }
+
+  static Future<bool> deleteOrder(Order order) async {
+    if (_isOnlineMode && order.serverId != null) {
+      final result = await ApiService.delete('/orders/${order.serverId}');
+      return result['success'] == true;
+    }
+    // Offline mode
+    if (order.id != null) {
+      await DatabaseService.softDeleteOrder(order.id!);
+      if (order.serverId != null && order.serverId!.isNotEmpty) {
+        await SyncService.addToQueue(
+          entityType: 'order',
+          entityId: order.id!,
+          action: 'delete',
+          payload: {'id': order.serverId},
+        );
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static Future<bool> updateOrderStatus(Order order, String newStatus) async {
+    if (_isOnlineMode && order.serverId != null) {
+      final result = await ApiService.post(
+          '/orders/${order.serverId}/status', {'status': newStatus});
+      return result['success'] == true;
+    }
+    // Offline mode
+    if (order.id != null) {
+      await DatabaseService.updateOrderStatus(order.id!, newStatus);
+      if (order.serverId != null && order.serverId!.isNotEmpty) {
+        await SyncService.addToQueue(
+          entityType: 'order',
+          entityId: order.id!,
+          action: 'update',
+          payload: {'id': order.serverId, 'status': newStatus},
+        );
+      }
+      return true;
+    }
+    return false;
+  }
+
+  static Future<bool> updateOrder(Order order, Map<String, dynamic> updates) async {
+    if (_isOnlineMode && order.serverId != null) {
+      final result = await ApiService.put('/orders/${order.serverId}', {
+        'orderType': order.orderType,
+        'stitchingAmount': updates['stitchingAmount'] ?? order.stitchingAmount,
+        'materialAmount': updates['materialAmount'] ?? order.materialAmount,
+        'discount': updates['discount'] ?? 0,
+        'dueDate': updates['dueDate'],
+        'designNotes': updates['notes'] ?? order.notes,
+        'isUrgent': false,
+      });
+      return result['success'] == true;
+    }
+    return false;
+  }
+
   // ─── Spendings (always API) ───
 
   static Future<List<Map<String, dynamic>>> getSpendings() async {

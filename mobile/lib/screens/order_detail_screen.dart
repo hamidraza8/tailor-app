@@ -14,9 +14,10 @@ import '../utils/helpers.dart';
 import 'receive_payment_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
-  final int orderId;
+  final int? orderId;
+  final String? serverOrderId;
 
-  const OrderDetailScreen({super.key, required this.orderId});
+  const OrderDetailScreen({super.key, this.orderId, this.serverOrderId});
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -38,10 +39,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadOrder() async {
-    final order = await DataService.getOrderById(widget.orderId);
+    Order? order;
     List<Payment> payments = [];
-    if (order != null) {
-      payments = await DataService.getPaymentsByOrder(order.id!);
+    if (DataService.isOnlineMode && widget.serverOrderId != null) {
+      order = await DataService.getOrderByServerId(widget.serverOrderId!);
+    } else if (widget.orderId != null) {
+      order = await DataService.getOrderById(widget.orderId!);
+      if (order != null) {
+        payments = await DataService.getPaymentsByOrder(order.id!);
+      }
     }
     setState(() {
       _order = order;
@@ -51,15 +57,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _updateStatus(String newStatus) async {
-    await DatabaseService.updateOrderStatus(widget.orderId, newStatus);
-    if (_order?.serverId != null && _order!.serverId!.isNotEmpty) {
-      await SyncService.addToQueue(
-        entityType: 'order',
-        entityId: widget.orderId,
-        action: 'update',
-        payload: {'id': _order!.serverId, 'status': newStatus},
-      );
-      if (mounted) Provider.of<AppProvider>(context, listen: false).syncNow();
+    if (_order == null) return;
+    await DataService.updateOrderStatus(_order!, newStatus);
+    if (!DataService.isOnlineMode && mounted) {
+      Provider.of<AppProvider>(context, listen: false).syncNow();
     }
     _loadOrder();
   }
@@ -118,26 +119,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               onPressed: () async {
                 final confirm = await _confirmDelete(context, 'this order');
                 if (!confirm || !mounted) return;
-                if (order.serverId == null || order.serverId!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Order not synced yet. Sync first, then delete.')),
-                  );
-                  return;
-                }
-                // Hide locally immediately
-                await DatabaseService.softDeleteOrder(order.id!);
-                await SyncService.addToQueue(
-                  entityType: 'order',
-                  entityId: order.id!,
-                  action: 'delete',
-                  payload: {'id': order.serverId},
-                );
+                final deleted = await DataService.deleteOrder(order);
                 if (!mounted) return;
-                Provider.of<AppProvider>(context, listen: false).syncNow();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Order deleted')),
-                );
-                Navigator.pop(context);
+                if (deleted) {
+                  if (!DataService.isOnlineMode) {
+                    Provider.of<AppProvider>(context, listen: false).syncNow();
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Order deleted')),
+                  );
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to delete order')),
+                  );
+                }
               },
             ),
         ],
@@ -494,16 +490,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  if (order.serverId == null ||
-                      order.serverId!.isEmpty) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Order not synced yet. Sync first, then edit.')),
-                    );
-                    return;
-                  }
                   Navigator.pop(ctx);
                   final body = <String, dynamic>{
                     'stitchingAmount':
@@ -518,17 +504,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   };
                   final due = dueDateCtrl.text.trim();
                   if (due.isNotEmpty) body['dueDate'] = due;
-                  body['id'] = order.serverId;
-                  await SyncService.addToQueue(
-                    entityType: 'order',
-                    entityId: DateTime.now().millisecondsSinceEpoch % 2000000000,
-                    action: 'update',
-                    payload: body,
-                  );
+
+                  if (DataService.isOnlineMode) {
+                    await DataService.updateOrder(order, body);
+                  } else {
+                    if (order.serverId == null || order.serverId!.isEmpty) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Order not synced yet.')),
+                      );
+                      return;
+                    }
+                    body['id'] = order.serverId;
+                    await SyncService.addToQueue(
+                      entityType: 'order',
+                      entityId: DateTime.now().millisecondsSinceEpoch % 2000000000,
+                      action: 'update',
+                      payload: body,
+                    );
+                    if (!mounted) return;
+                    Provider.of<AppProvider>(context, listen: false).syncNow();
+                  }
                   if (!mounted) return;
-                  Provider.of<AppProvider>(context, listen: false).syncNow();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saved — syncing')),
+                    const SnackBar(content: Text('Order updated')),
                   );
                   _loadOrder();
                 },

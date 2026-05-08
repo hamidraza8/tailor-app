@@ -126,16 +126,24 @@ class TailorApp extends StatelessWidget {
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/order-detail') {
-            final orderId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => OrderDetailScreen(orderId: orderId),
-            );
+            final arg = settings.arguments;
+            if (arg is int) {
+              return MaterialPageRoute(
+                builder: (_) => OrderDetailScreen(orderId: arg),
+              );
+            } else if (arg is String) {
+              return MaterialPageRoute(
+                builder: (_) => OrderDetailScreen(serverOrderId: arg),
+              );
+            }
           }
           if (settings.name == '/invoice') {
-            final orderId = settings.arguments as int;
-            return MaterialPageRoute(
-              builder: (_) => InvoiceScreen(orderId: orderId),
-            );
+            final orderId = settings.arguments as int?;
+            if (orderId != null) {
+              return MaterialPageRoute(
+                builder: (_) => InvoiceScreen(orderId: orderId),
+              );
+            }
           }
           return null;
         },

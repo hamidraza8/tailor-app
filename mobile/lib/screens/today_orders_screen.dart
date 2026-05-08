@@ -84,41 +84,30 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
   }
 
   Future<void> _deleteOrder(Order order) async {
-    if (order.serverId == null || order.serverId!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order not synced yet. Sync first, then delete.')),
-      );
-      return;
-    }
     final confirm =
         await _confirmDelete(context, '${order.customerName ?? 'this'} order');
     if (!confirm || !mounted) return;
-    // Hide locally immediately
-    await DatabaseService.softDeleteOrder(order.id!);
-    await SyncService.addToQueue(
-      entityType: 'order',
-      entityId: order.id!,
-      action: 'delete',
-      payload: {'id': order.serverId},
-    );
+    final deleted = await DataService.deleteOrder(order);
     if (!mounted) return;
-    Provider.of<AppProvider>(context, listen: false).syncNow();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Order deleted')),
-    );
-    _loadOrders();
+    if (deleted) {
+      if (!DataService.isOnlineMode) {
+        Provider.of<AppProvider>(context, listen: false).syncNow();
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order deleted')),
+      );
+      _loadOrders();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete order')),
+      );
+    }
   }
 
   Future<void> _markReady(Order order) async {
-    await DatabaseService.updateOrderStatus(order.id!, OrderStatus.ready);
-    if (order.serverId != null && order.serverId!.isNotEmpty) {
-      await SyncService.addToQueue(
-        entityType: 'order',
-        entityId: order.id!,
-        action: 'update',
-        payload: {'id': order.serverId, 'status': OrderStatus.ready},
-      );
-      if (mounted) Provider.of<AppProvider>(context, listen: false).syncNow();
+    await DataService.updateOrderStatus(order, OrderStatus.ready);
+    if (!DataService.isOnlineMode && mounted) {
+      Provider.of<AppProvider>(context, listen: false).syncNow();
     }
     _loadOrders();
     if (!mounted) return;
@@ -197,7 +186,7 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.pushNamed(context, '/order-detail',
-            arguments: order.id),
+            arguments: DataService.isOnlineMode ? order.serverId : order.id),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
