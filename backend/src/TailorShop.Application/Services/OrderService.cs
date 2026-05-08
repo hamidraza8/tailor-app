@@ -192,7 +192,8 @@ public class OrderService
     {
         var today = DateTime.UtcNow;
         var prefix = $"ORD-{today:yyyyMMdd}";
-        var count = await _db.Orders.CountAsync(o => o.OrderNumber.StartsWith(prefix));
+        var count = await _db.Orders.IgnoreQueryFilters()
+            .CountAsync(o => o.OrderNumber.StartsWith(prefix));
         return $"{prefix}-{(count + 1):D3}";
     }
 
