@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_provider.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
@@ -42,66 +44,93 @@ class TailorApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'Tailor App',
+        title: 'TailorPro',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primaryColor: AppColors.primary,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
+          colorScheme: ColorScheme.light(
             primary: AppColors.primary,
-            secondary: AppColors.secondary,
-            surface: AppColors.background,
+            primaryContainer: AppColors.primaryLight,
+            secondary: AppColors.accent,
+            surface: AppColors.cardBg,
+            error: AppColors.error,
           ),
           scaffoldBackgroundColor: AppColors.background,
           appBarTheme: const AppBarTheme(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            foregroundColor: AppColors.textDark,
             elevation: 0,
             centerTitle: true,
-            titleTextStyle: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.button),
               ),
               textStyle: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          outlinedButtonTheme: OutlinedButtonThemeData(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.button),
               ),
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
-            fillColor: AppColors.cardBg,
+            fillColor: AppColors.lavender,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.input),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            hintStyle: const TextStyle(color: AppColors.textLight),
           ),
           cardTheme: CardTheme(
             elevation: 0,
             color: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(AppRadius.card),
             ),
           ),
-          fontFamily: 'Roboto',
+          chipTheme: ChipThemeData(
+            backgroundColor: AppColors.lavender,
+            labelStyle: const TextStyle(color: AppColors.primary),
+            shape: const StadiumBorder(),
+          ),
+          textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+            headlineLarge: GoogleFonts.poppins(
+              fontSize: 34, fontWeight: FontWeight.w700, color: AppColors.textDark),
+            headlineMedium: GoogleFonts.poppins(
+              fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark),
+            titleLarge: GoogleFonts.poppins(
+              fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark),
+            titleMedium: GoogleFonts.poppins(
+              fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark),
+            bodyLarge: GoogleFonts.poppins(
+              fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.textDark),
+            bodyMedium: GoogleFonts.poppins(
+              fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textMedium),
+            bodySmall: GoogleFonts.poppins(
+              fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textMedium),
+          ),
           useMaterial3: true,
         ),
         initialRoute: '/splash',

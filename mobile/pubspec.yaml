@@ -23,6 +23,7 @@ dependencies:
   intl: ^0.18.1
   provider: ^6.1.1
   uuid: ^4.2.1
+  google_fonts: ^6.1.0
   flutter_sound: ^9.2.13
   audioplayers: ^5.2.1
   permission_handler: ^11.0.1

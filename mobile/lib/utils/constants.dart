@@ -1,26 +1,82 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF00897B);
-  static const Color primaryLight = Color(0xFF4DB6AC);
-  static const Color primaryDark = Color(0xFF00695C);
-  static const Color secondary = Color(0xFFE91E63);
-  static const Color secondaryLight = Color(0xFFF48FB1);
-  static const Color background = Color(0xFFFAFAFA);
-  static const Color cardBg = Color(0xFFF5F5F5);
+  // Primary purple palette
+  static const Color primary = Color(0xFF7B1FA2);
+  static const Color primaryDark = Color(0xFF4A148C);
+  static const Color primaryLight = Color(0xFFAB47BC);
+  static const Color accent = Color(0xFFCE93D8);
+  static const Color purpleBlue = Color(0xFF5C6BC0);
+  static const Color lavender = Color(0xFFF3E5F5);
+
+  // Surfaces
+  static const Color background = Color(0xFFF8F5FC);
+  static const Color cardBg = Color(0xFFFFFFFF);
   static const Color white = Colors.white;
-  static const Color textDark = Color(0xFF212121);
-  static const Color textMedium = Color(0xFF616161);
-  static const Color textLight = Color(0xFF9E9E9E);
-  static const Color success = Color(0xFF4CAF50);
-  static const Color warning = Color(0xFFFF9800);
-  static const Color error = Color(0xFFE53935);
-  static const Color green = Color(0xFF43A047);
-  static const Color blue = Color(0xFF1E88E5);
-  static const Color orange = Color(0xFFF57C00);
-  static const Color purple = Color(0xFF8E24AA);
-  static const Color teal = Color(0xFF00897B);
-  static const Color red = Color(0xFFE53935);
+
+  // Text
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textMedium = Color(0xFF6E6E8A);
+  static const Color textLight = Color(0xFF9E9EAE);
+
+  // Semantic
+  static const Color success = Color(0xFF66BB6A);
+  static const Color warning = Color(0xFFFFA726);
+  static const Color error = Color(0xFFEF5350);
+  static const Color green = Color(0xFF66BB6A);
+  static const Color blue = Color(0xFF42A5F5);
+  static const Color orange = Color(0xFFFFA726);
+  static const Color purple = Color(0xFF7B1FA2);
+  static const Color teal = Color(0xFF26A69A);
+  static const Color red = Color(0xFFEF5350);
+  static const Color pink = Color(0xFFEC407A);
+
+  // Legacy aliases
+  static const Color secondary = Color(0xFFCE93D8);
+  static const Color secondaryLight = Color(0xFFF3E5F5);
+
+  // Gradients
+  static const LinearGradient headerGradient = LinearGradient(
+    colors: [Color(0xFF4A148C), Color(0xFF5C6BC0)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient buttonGradient = LinearGradient(
+    colors: [Color(0xFF7B1FA2), Color(0xFFAB47BC)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
+  static const LinearGradient splashGradient = LinearGradient(
+    colors: [Color(0xFF4A148C), Color(0xFF7B1FA2), Color(0xFF5C6BC0)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  // Shadows
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get softShadow => [
+        BoxShadow(
+          color: primary.withOpacity(0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 6),
+        ),
+      ];
+}
+
+class AppRadius {
+  static const double card = 20;
+  static const double button = 16;
+  static const double input = 14;
+  static const double header = 32;
 }
 
 class ApiConfig {
