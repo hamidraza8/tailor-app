@@ -11,20 +11,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_torin
-          chmod 600 ~/.ssh/id_torin
-          ssh-keyscan -H 91.99.20.199 >> ~/.ssh/known_hosts
-
       - name: Deploy to server
-        run: |
-          ssh -i ~/.ssh/id_torin root@91.99.20.199 << 'DEPLOY'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 91.99.20.199
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
             set -e
             cd /opt/tailor-application
 
-            # Pull latest code
             if [ ! -d .git ]; then
               git init
               git remote add origin https://github.com/hamidraza8/tailor-app.git
@@ -32,12 +28,8 @@ jobs:
             git fetch origin master
             git reset --hard origin/master
 
-            # Rebuild and restart
             cd deployment
             docker compose up -d --build --remove-orphans
-
-            # Cleanup old images
             docker image prune -f
 
             echo "Deployment complete!"
-          DEPLOY
