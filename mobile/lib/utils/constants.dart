@@ -24,7 +24,7 @@ class AppColors {
 }
 
 class ApiConfig {
-  static String baseUrl = 'http://192.168.1.19:5000/api';
+  static String baseUrl = 'https://torin.pk/api';
   static const Duration timeout = Duration(seconds: 30);
 }
 

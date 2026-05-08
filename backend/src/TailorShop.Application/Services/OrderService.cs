@@ -36,8 +36,11 @@ public class OrderService
 
     public async Task<List<OrderDto>> GetTodaysOrdersAsync()
     {
-        var today = DateTime.UtcNow.Date;
-        return await GetOrdersAsync(from: today, to: today.AddDays(1));
+        var pkt = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pkt).Date;
+        var fromUtc = TimeZoneInfo.ConvertTimeToUtc(today, pkt);
+        var toUtc = TimeZoneInfo.ConvertTimeToUtc(today.AddDays(1), pkt);
+        return await GetOrdersAsync(from: fromUtc, to: toUtc);
     }
 
     public async Task<OrderDto?> GetOrderByIdAsync(Guid id)

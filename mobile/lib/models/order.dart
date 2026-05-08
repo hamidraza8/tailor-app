@@ -146,6 +146,7 @@ class Order {
       'paidAmount': paidAmount,
       'notes': notes,
       'dueDate': dueDate?.toIso8601String(),
+      'createdAt': createdAt.toUtc().toIso8601String(),
     };
   }
 

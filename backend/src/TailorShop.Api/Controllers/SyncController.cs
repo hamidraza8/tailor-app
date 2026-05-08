@@ -233,11 +233,14 @@ public class SyncController : ControllerBase
                         var profile = await _db.BusinessProfiles.FirstOrDefaultAsync();
                         var orderNumber = $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
 
+                        var mobileCreatedAt = GetDateTime(root, "createdAt");
+
                         var order = new Order
                         {
                             OrderNumber = orderNumber,
                             CustomerId = customerId,
                             OrderType = orderType,
+                            OrderDate = mobileCreatedAt ?? DateTime.UtcNow,
                             StitchingAmount = GetDecimal(root, "stitchingAmount"),
                             MaterialAmount = GetDecimal(root, "materialAmount"),
                             Discount = GetDecimal(root, "discount"),

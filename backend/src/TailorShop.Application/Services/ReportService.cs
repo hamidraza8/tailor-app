@@ -14,8 +14,10 @@ public class ReportService
 
     public async Task<DashboardDto> GetDashboardAsync()
     {
-        var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
+        var pkt = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+        var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pkt).Date;
+        var today = TimeZoneInfo.ConvertTimeToUtc(todayLocal, pkt);
+        var tomorrow = TimeZoneInfo.ConvertTimeToUtc(todayLocal.AddDays(1), pkt);
 
         var todaySales = await _db.Payments
             .Where(p => p.PaymentDate >= today && p.PaymentDate < tomorrow)
