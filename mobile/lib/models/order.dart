@@ -12,10 +12,17 @@ class Order {
   final double totalAmount;
   final double paidAmount;
   final double balanceAmount;
+  final double discount;
   final String? designPhotoPath;
   final String? designPhotoUrl;
   final int? measurementId;
+  final String? measurementServerId;
+  final String? orderNumber;
   final String? notes;
+  final String? specialInstructions;
+  final bool isUrgent;
+  final double labourSharePercentage;
+  final double labourAmount;
   final DateTime? dueDate;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -35,10 +42,17 @@ class Order {
     double? totalAmount,
     this.paidAmount = 0,
     double? balanceAmount,
+    this.discount = 0,
     this.designPhotoPath,
     this.designPhotoUrl,
     this.measurementId,
+    this.measurementServerId,
+    this.orderNumber,
     this.notes,
+    this.specialInstructions,
+    this.isUrgent = false,
+    this.labourSharePercentage = 35,
+    this.labourAmount = 0,
     this.dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -108,13 +122,13 @@ class Order {
   }
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    // Extract first photo URL if available
     String? photoUrl;
     if (json['photos'] is List && (json['photos'] as List).isNotEmpty) {
       photoUrl = (json['photos'] as List).first['url']?.toString();
     }
     return Order(
       serverId: json['id']?.toString(),
+      customerServerId: json['customerId']?.toString(),
       customerName: json['customerName'] as String?,
       customerPhone: json['customerPhone'] as String?,
       orderType: json['orderType'] as String? ?? '',
@@ -124,8 +138,15 @@ class Order {
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0,
       balanceAmount: (json['balanceAmount'] as num?)?.toDouble() ?? 0,
+      discount: (json['discount'] as num?)?.toDouble() ?? 0,
       designPhotoUrl: photoUrl,
+      measurementServerId: json['measurementId']?.toString(),
+      orderNumber: json['orderNumber'] as String?,
       notes: json['designNotes'] as String? ?? json['notes'] as String?,
+      specialInstructions: json['specialInstructions'] as String?,
+      isUrgent: json['isUrgent'] as bool? ?? false,
+      labourSharePercentage: (json['labourSharePercentage'] as num?)?.toDouble() ?? 35,
+      labourAmount: (json['labourAmount'] as num?)?.toDouble() ?? 0,
       dueDate: json['dueDate'] != null
           ? DateTime.parse(json['dueDate'] as String)
           : null,
@@ -169,10 +190,17 @@ class Order {
     double? totalAmount,
     double? paidAmount,
     double? balanceAmount,
+    double? discount,
     String? designPhotoPath,
     String? designPhotoUrl,
     int? measurementId,
+    String? measurementServerId,
+    String? orderNumber,
     String? notes,
+    String? specialInstructions,
+    bool? isUrgent,
+    double? labourSharePercentage,
+    double? labourAmount,
     DateTime? dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -192,10 +220,17 @@ class Order {
       totalAmount: totalAmount ?? this.totalAmount,
       paidAmount: paidAmount ?? this.paidAmount,
       balanceAmount: balanceAmount ?? this.balanceAmount,
+      discount: discount ?? this.discount,
       designPhotoPath: designPhotoPath ?? this.designPhotoPath,
       designPhotoUrl: designPhotoUrl ?? this.designPhotoUrl,
       measurementId: measurementId ?? this.measurementId,
+      measurementServerId: measurementServerId ?? this.measurementServerId,
+      orderNumber: orderNumber ?? this.orderNumber,
       notes: notes ?? this.notes,
+      specialInstructions: specialInstructions ?? this.specialInstructions,
+      isUrgent: isUrgent ?? this.isUrgent,
+      labourSharePercentage: labourSharePercentage ?? this.labourSharePercentage,
+      labourAmount: labourAmount ?? this.labourAmount,
       dueDate: dueDate ?? this.dueDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -26,6 +26,7 @@ class OrderDetailScreen extends StatefulWidget {
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   List<Payment> _payments = [];
+  Map<String, dynamic>? _measurement;
   bool _loading = true;
   bool _updatingStatus = false;
   bool _isAdmin = false;
@@ -59,10 +60,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         payments = await DataService.getPaymentsByOrder(order.id!);
       }
     }
+    // Fetch measurements in online mode
+    Map<String, dynamic>? measurement;
+    if (DataService.isOnlineMode && order != null && order.customerServerId != null) {
+      final mResult = await ApiService.get('/customers/${order.customerServerId}/measurements');
+      if (mResult['success'] == true && mResult['data'] is List) {
+        final measurements = mResult['data'] as List;
+        if (order?.measurementServerId != null) {
+          measurement = measurements.cast<Map<String, dynamic>>().where(
+              (m) => m['id']?.toString() == order!.measurementServerId).firstOrNull;
+        }
+        measurement ??= measurements.isNotEmpty
+            ? measurements.last as Map<String, dynamic>
+            : null;
+      }
+    }
+
     if (!mounted) return;
     setState(() {
       _order = order;
       _payments = payments;
+      _measurement = measurement;
       _loading = false;
     });
   }
@@ -273,16 +291,58 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(height: 16),
 
                   // Details
+                  if (order.orderNumber != null)
+                    _detailRow('Order #', order.orderNumber!),
                   _detailRow('Order Type', order.orderType),
-                  if (order.serverId != null)
-                    _detailRow('Order #', order.serverId!.substring(0, 8).toUpperCase()),
+                  if (order.isUrgent)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('URGENT',
+                          style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
                   _detailRow('Created', Helpers.formatDateTime(order.createdAt)),
                   if (order.dueDate != null) ...[
                     _detailRow('Due Date', Helpers.formatDate(order.dueDate!)),
                     _detailRow('Time Left', Helpers.daysUntil(order.dueDate!)),
                   ],
+                  if (order.discount > 0)
+                    _detailRow('Discount', Helpers.formatCurrency(order.discount)),
+                  if (order.labourAmount > 0)
+                    _detailRow('Labour (${order.labourSharePercentage.toStringAsFixed(0)}%)',
+                        Helpers.formatCurrency(order.labourAmount)),
                   if (order.notes != null && order.notes!.isNotEmpty)
-                    _detailRow('Notes', order.notes!),
+                    _detailRow('Design Notes', order.notes!),
+                  if (order.specialInstructions != null && order.specialInstructions!.isNotEmpty)
+                    _detailRow('Special Instructions', order.specialInstructions!),
+
+                  // Measurements section
+                  if (_measurement != null) ...[
+                    const SizedBox(height: 20),
+                    const Text('Measurements',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBg,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          if (_measurement!['label'] != null)
+                            _detailRow('Label', _measurement!['label'].toString()),
+                          ..._buildMeasurementRows(),
+                          if (_measurement!['notes'] != null && _measurement!['notes'].toString().isNotEmpty)
+                            _detailRow('Notes', _measurement!['notes'].toString()),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 20),
 
@@ -569,6 +629,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildMeasurementRows() {
+    if (_measurement == null) return [];
+    final fields = {
+      'length': 'Length / لمبائی',
+      'shoulder': 'Shoulder / کندھا',
+      'chest': 'Chest / چھاتی',
+      'waist': 'Waist / کمر',
+      'hip': 'Hip / کولہا',
+      'sleeveLength': 'Sleeve Length / آستین',
+      'sleeveWidth': 'Sleeve Width',
+      'armhole': 'Armhole',
+      'neck': 'Neck / گلا',
+      'trouserLength': 'Trouser Length',
+      'trouserWaist': 'Trouser Waist',
+      'inseam': 'Inseam',
+      'thighWidth': 'Thigh Width',
+      'bottomWidth': 'Bottom Width',
+      'damanWidth': 'Daman Width',
+      'frontDrop': 'Front Drop',
+      'backDrop': 'Back Drop',
+    };
+    final rows = <Widget>[];
+    for (final entry in fields.entries) {
+      final val = _measurement![entry.key];
+      if (val != null && val.toString() != '0' && val.toString().isNotEmpty) {
+        rows.add(_detailRow(entry.value, '${val} inches'));
+      }
+    }
+    return rows;
   }
 
   Widget _buildStatusTimeline(String currentStatus) {
