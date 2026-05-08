@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="text-h5 font-weight-bold mb-6">Dashboard</h1>
+    <h1 class="text-h5 font-weight-bold mb-6">Dashboard OverAll</h1>
 
     <v-row>
       <v-col v-for="card in dashboardCards" :key="card.label" cols="12" sm="6" md="3">
