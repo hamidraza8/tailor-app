@@ -27,6 +27,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   List<Payment> _payments = [];
   bool _loading = true;
+  bool _updatingStatus = false;
   bool _isAdmin = false;
 
   @override
@@ -39,13 +40,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadOrder() async {
+    if (!_loading) setState(() => _loading = true);
     Order? order;
     List<Payment> payments = [];
     if (DataService.isOnlineMode && widget.serverOrderId != null) {
       order = await DataService.getOrderByServerId(widget.serverOrderId!);
-      // Fetch payments from API for this order
       if (order != null) {
-        final result = await ApiService.get('/payments?orderId=${widget.serverOrderId}');
+        final result = await ApiService.get('/payments/by-order/${widget.serverOrderId}');
         if (result['success'] == true && result['data'] is List) {
           payments = (result['data'] as List)
               .map((e) => Payment.fromJson(e as Map<String, dynamic>))
@@ -58,6 +59,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         payments = await DataService.getPaymentsByOrder(order.id!);
       }
     }
+    if (!mounted) return;
     setState(() {
       _order = order;
       _payments = payments;
@@ -66,9 +68,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _updateStatus(String newStatus) async {
-    if (_order == null) return;
+    if (_order == null || _updatingStatus) return;
+    setState(() => _updatingStatus = true);
     final success = await DataService.updateOrderStatus(_order!, newStatus);
     if (!mounted) return;
+    setState(() => _updatingStatus = false);
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -619,19 +623,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ),
               if (!isCompleted && index == currentIndex + 1)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text('Tap to update',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ),
+                _updatingStatus
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text('Tap to update',
+                            style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ),
             ],
           ),
         );
