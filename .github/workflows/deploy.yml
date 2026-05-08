@@ -2,7 +2,7 @@ name: Deploy to Hetzner
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   deploy:
@@ -29,8 +29,8 @@ jobs:
               git init
               git remote add origin https://github.com/hamidraza8/tailor-app.git
             fi
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin master
+            git reset --hard origin/master
 
             # Rebuild and restart
             cd deployment
