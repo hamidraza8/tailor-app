@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/order.dart';
 import '../providers/app_provider.dart';
+import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/status_badge.dart';
@@ -37,8 +38,8 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
 
   Future<void> _loadOrders() async {
     setState(() => _loading = true);
-    final today = await DatabaseService.getTodayOrders();
-    final active = await DatabaseService.getActiveOrders();
+    final today = await DataService.getTodayOrders();
+    final active = await DataService.getActiveOrders();
     setState(() {
       _todayOrders = today;
       _activeOrders = active;

@@ -62,6 +62,51 @@ class Payment {
     );
   }
 
+  factory Payment.fromJson(Map<String, dynamic> json) {
+    return Payment(
+      serverId: json['id']?.toString(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      method: json['method'] as String? ?? 'Cash',
+      reference: json['reference'] as String?,
+      notes: json['notes'] as String?,
+      paidAt: json['paymentDate'] != null
+          ? DateTime.parse(json['paymentDate'] as String)
+          : DateTime.now(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      synced: true,
+    );
+  }
+
+  Payment copyWith({
+    int? id,
+    String? serverId,
+    int? orderId,
+    String? orderServerId,
+    double? amount,
+    String? method,
+    String? reference,
+    String? notes,
+    DateTime? paidAt,
+    DateTime? createdAt,
+    bool? synced,
+  }) {
+    return Payment(
+      id: id ?? this.id,
+      serverId: serverId ?? this.serverId,
+      orderId: orderId ?? this.orderId,
+      orderServerId: orderServerId ?? this.orderServerId,
+      amount: amount ?? this.amount,
+      method: method ?? this.method,
+      reference: reference ?? this.reference,
+      notes: notes ?? this.notes,
+      paidAt: paidAt ?? this.paidAt,
+      createdAt: createdAt ?? this.createdAt,
+      synced: synced ?? this.synced,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'orderId': orderServerId ?? orderId?.toString(),

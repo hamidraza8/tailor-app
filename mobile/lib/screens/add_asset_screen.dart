@@ -5,8 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/asset.dart';
 import '../providers/app_provider.dart';
 import '../services/api_service.dart';
-import '../services/database_service.dart';
-import '../services/sync_service.dart';
+import '../services/data_service.dart';
 import '../widgets/photo_capture_widget.dart';
 import '../utils/constants.dart';
 
@@ -169,19 +168,7 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
             : _notesController.text.trim(),
       );
 
-      final id = await DatabaseService.insertAsset(asset);
-
-      await SyncService.addToQueue(
-        entityType: 'asset',
-        entityId: id,
-        action: 'create',
-        payload: {
-          ...asset.toJson(),
-          'ownerId': _selectedOwnerId,
-          'purchaseDate': _selectedDate.toIso8601String(),
-        },
-        filePath: _photoPath,
-      );
+      await DataService.insertAsset(asset);
 
       if (!mounted) return;
       Provider.of<AppProvider>(context, listen: false).refreshSyncCount();

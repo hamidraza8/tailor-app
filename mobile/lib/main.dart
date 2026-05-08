@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
+import 'services/data_service.dart';
 import 'utils/constants.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -29,6 +30,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseService.init();
   await AuthService.loadApiUrl();
+  await DataService.init();
   runApp(const TailorApp());
 }
 

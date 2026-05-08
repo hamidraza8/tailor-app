@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/asset.dart';
 import '../providers/app_provider.dart';
+import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../services/api_service.dart';
 import '../services/sync_service.dart';
@@ -32,7 +33,7 @@ class _AssetsListScreenState extends State<AssetsListScreen> {
 
   Future<void> _loadData() async {
     setState(() => _loading = true);
-    final assets = await DatabaseService.getAssets();
+    final assets = await DataService.getAssets();
     double total = 0;
     for (final a in assets) {
       total += a.totalValue;

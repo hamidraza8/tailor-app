@@ -11,6 +11,7 @@ import '../models/inventory.dart';
 import '../models/asset.dart';
 import '../services/database_service.dart';
 import '../services/api_service.dart';
+import '../services/data_service.dart';
 import 'package:intl/intl.dart';
 import 'partner_balances_screen.dart';
 import 'add_capital_screen.dart';
@@ -65,14 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loading = true);
 
     final results = await Future.wait([
-      DatabaseService.getOrders(),                // 0
-      DatabaseService.getActiveOrders(),           // 1
-      DatabaseService.getTodayOrders(),            // 2
-      DatabaseService.getOrdersWithBalance(),      // 3
-      DatabaseService.getAllPayments(),             // 4
-      ApiService.get('/spendings'),                // 5 - spendings from server
-      DatabaseService.getInventoryTransactions(),  // 6
-      DatabaseService.getAssets(),                 // 7
+      DataService.getOrders(),                     // 0
+      DataService.getActiveOrders(),               // 1
+      DataService.getTodayOrders(),                // 2
+      DataService.getOrdersWithBalance(),          // 3
+      DataService.getAllPayments(),                // 4
+      DataService.getSpendings(),                  // 5
+      DataService.getInventoryTransactions(),      // 6
+      DataService.getAssets(),                     // 7
     ]);
 
     final allOrders = results[0] as List<Order>;
@@ -80,10 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final todayOrders = results[2] as List<Order>;
     final unpaidOrders = results[3] as List<Order>;
     final payments = results[4] as List<Payment>;
-    final spendingsResult = results[5] as Map<String, dynamic>;
-    final spendingsRaw = spendingsResult['success'] == true && spendingsResult['data'] is List
-        ? (spendingsResult['data'] as List).cast<Map<String, dynamic>>()
-        : <Map<String, dynamic>>[];
+    final spendingsRaw = results[5] as List<Map<String, dynamic>>;
     final inventory = results[6] as List<InventoryTransaction>;
     final assets = results[7] as List<Asset>;
 

@@ -3,8 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/inventory.dart';
 import '../providers/app_provider.dart';
-import '../services/database_service.dart';
-import '../services/sync_service.dart';
+import '../services/data_service.dart';
 import '../widgets/photo_capture_widget.dart';
 import '../widgets/amount_input.dart';
 import '../utils/constants.dart';
@@ -62,15 +61,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
             : _notesController.text.trim(),
       );
 
-      final id = await DatabaseService.insertInventoryTransaction(transaction);
-
-      await SyncService.addToQueue(
-        entityType: 'inventory',
-        entityId: id,
-        action: 'create',
-        payload: transaction.toJson(),
-        filePath: _receiptPhotoPath,
-      );
+      await DataService.insertInventoryTransaction(transaction);
 
       if (!mounted) return;
       Provider.of<AppProvider>(context, listen: false).refreshSyncCount();

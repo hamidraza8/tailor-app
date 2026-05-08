@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import '../services/api_service.dart';
+import '../services/data_service.dart';
 import '../services/sync_service.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -31,14 +31,7 @@ class _ExpensesListScreenState extends State<ExpensesListScreen> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
 
-    List<Map<String, dynamic>> spendings = [];
-
-    final result = await ApiService.get('/spendings');
-    if (result['success'] == true) {
-      final raw = result['data'];
-      final list = raw is List ? raw : [];
-      spendings = list.cast<Map<String, dynamic>>();
-    }
+    final spendings = await DataService.getSpendings();
 
     double total = 0;
     for (final s in spendings) {

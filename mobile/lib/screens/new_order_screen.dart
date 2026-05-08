@@ -5,8 +5,8 @@ import '../models/order.dart';
 import '../models/measurement.dart';
 import '../models/payment.dart';
 import '../providers/app_provider.dart';
+import '../services/data_service.dart';
 import '../services/database_service.dart';
-import '../services/sync_service.dart';
 import '../widgets/photo_capture_widget.dart';
 import '../widgets/amount_input.dart';
 import '../utils/constants.dart';
@@ -65,13 +65,13 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
   }
 
   Future<void> _loadCustomers() async {
-    final customers = await DatabaseService.getCustomers();
+    final customers = await DataService.getCustomers();
     setState(() => _customers = customers);
   }
 
   Future<void> _searchCustomers(String query) async {
     final customers =
-        await DatabaseService.getCustomers(search: query.isEmpty ? null : query);
+        await DataService.getCustomers(search: query.isEmpty ? null : query);
     setState(() => _customers = customers);
   }
 
@@ -139,14 +139,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     }
 
     final customer = Customer(name: name, phone: phone);
-    final id = await DatabaseService.insertCustomer(customer);
-
-    await SyncService.addToQueue(
-      entityType: 'customer',
-      entityId: id,
-      action: 'create',
-      payload: customer.toJson(),
-    );
+    final id = await DataService.insertCustomer(customer);
 
     final saved = customer.copyWith(id: id);
     setState(() {
@@ -189,7 +182,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         trouserWaist: double.tryParse(_trouserWaistController.text),
       );
       final measurementId =
-          await DatabaseService.insertMeasurement(measurement);
+          await DataService.insertMeasurement(measurement);
 
       // Save order
       final total = stitching + material;
@@ -210,27 +203,12 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
             : _notesController.text.trim(),
         dueDate: _dueDate,
       );
-      final orderId = await DatabaseService.insertOrder(order);
-
-      // Add to sync queue
-      await SyncService.addToQueue(
-        entityType: 'order',
-        entityId: orderId,
-        action: 'create',
-        payload: order.toJson(),
-        filePath: _designPhotoPath,
-      );
+      final orderId = await DataService.insertOrder(order);
 
       // Save advance payment if given
       if (advance > 0) {
-        final payment = await DatabaseService.insertPayment(
+        await DataService.insertPayment(
           _buildPayment(orderId, advance),
-        );
-        await SyncService.addToQueue(
-          entityType: 'payment',
-          entityId: payment,
-          action: 'create',
-          payload: {'orderId': orderId, 'amount': advance, 'method': 'Cash', 'customerName': _selectedCustomer!.name},
         );
       }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/auth_service.dart';
+import '../services/data_service.dart';
 import '../utils/constants.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _apiUrlController = TextEditingController();
   bool _saving = false;
+  bool _isOnlineMode = DataService.isOnlineMode;
 
   @override
   void initState() {
@@ -143,6 +145,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Data Mode
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _isOnlineMode
+                    ? AppColors.success.withOpacity(0.08)
+                    : AppColors.warning.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isOnlineMode ? AppColors.success : AppColors.warning,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _isOnlineMode ? Icons.cloud : Icons.cloud_off,
+                        color: _isOnlineMode ? AppColors.success : AppColors.warning,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _isOnlineMode ? 'Online Mode' : 'Offline Mode',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Switch(
+                        value: _isOnlineMode,
+                        activeColor: AppColors.success,
+                        onChanged: (value) async {
+                          await DataService.setMode(value);
+                          setState(() => _isOnlineMode = value);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(value
+                                  ? 'Online mode: Data saved directly to server'
+                                  : 'Offline mode: Data saved locally, synced later'),
+                              backgroundColor:
+                                  value ? AppColors.success : AppColors.warning,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isOnlineMode
+                        ? 'All data is read from and saved directly to the server. Requires internet connection.'
+                        : 'Data is saved locally and synced to the server when online.',
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textMedium),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // API URL
             const Text('Server URL',
                 style: TextStyle(
@@ -178,9 +243,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: AppColors.cardBg,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('App Version',
@@ -189,14 +254,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Database',
+                      const Text('Data Mode',
                           style: TextStyle(color: AppColors.textMedium)),
-                      Text('SQLite (Local)',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(_isOnlineMode ? 'Online (API)' : 'Offline (Local)',
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],

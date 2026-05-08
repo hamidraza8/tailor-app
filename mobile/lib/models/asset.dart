@@ -72,6 +72,59 @@ class Asset {
     );
   }
 
+  factory Asset.fromJson(Map<String, dynamic> json) {
+    return Asset(
+      serverId: json['id']?.toString(),
+      name: json['name'] as String? ?? '',
+      type: json['type'] as String? ?? '',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      unitValue: (json['unitValue'] as num?)?.toDouble() ?? 0,
+      totalValue: (json['totalValue'] as num?)?.toDouble() ?? 0,
+      owner: json['owner'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      status: json['approvalStatus'] as String? ?? json['status'] as String? ?? 'Pending',
+      notes: json['notes'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      synced: true,
+    );
+  }
+
+  Asset copyWith({
+    int? id,
+    String? serverId,
+    String? name,
+    String? type,
+    int? quantity,
+    double? unitValue,
+    double? totalValue,
+    String? owner,
+    String? photoPath,
+    String? photoUrl,
+    String? status,
+    String? notes,
+    DateTime? createdAt,
+    bool? synced,
+  }) {
+    return Asset(
+      id: id ?? this.id,
+      serverId: serverId ?? this.serverId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      quantity: quantity ?? this.quantity,
+      unitValue: unitValue ?? this.unitValue,
+      totalValue: totalValue ?? this.totalValue,
+      owner: owner ?? this.owner,
+      photoPath: photoPath ?? this.photoPath,
+      photoUrl: photoUrl ?? this.photoUrl,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      synced: synced ?? this.synced,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'name': name,

@@ -5,6 +5,7 @@ import '../models/order.dart';
 import '../models/payment.dart';
 import '../providers/app_provider.dart';
 import '../services/api_service.dart';
+import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/status_badge.dart';
@@ -37,10 +38,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadOrder() async {
-    final order = await DatabaseService.getOrderById(widget.orderId);
+    final order = await DataService.getOrderById(widget.orderId);
     List<Payment> payments = [];
     if (order != null) {
-      payments = await DatabaseService.getPaymentsByOrder(order.id!);
+      payments = await DataService.getPaymentsByOrder(order.id!);
     }
     setState(() {
       _order = order;

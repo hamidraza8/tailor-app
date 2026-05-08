@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/order.dart';
 import '../models/payment.dart';
 import '../providers/app_provider.dart';
-import '../services/database_service.dart';
-import '../services/sync_service.dart';
+import '../services/data_service.dart';
 import '../widgets/amount_input.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -33,13 +32,13 @@ class _ReceivePaymentScreenState extends State<ReceivePaymentScreen> {
   }
 
   Future<void> _loadOrders() async {
-    final orders = await DatabaseService.getOrdersWithBalance();
+    final orders = await DataService.getOrdersWithBalance();
     Order? preSelected;
     final preId = widget.preSelectedOrderId;
     if (preId != null) {
       // Try in the balance list first; if not there, fetch directly by ID
       preSelected = orders.where((o) => o.id == preId).firstOrNull;
-      preSelected ??= await DatabaseService.getOrderById(preId);
+      preSelected ??= await DataService.getOrderById(preId);
       // Ensure it's in the list so it renders
       if (preSelected != null && !orders.any((o) => o.id == preId)) {
         orders.insert(0, preSelected);
@@ -84,21 +83,7 @@ class _ReceivePaymentScreenState extends State<ReceivePaymentScreen> {
             : _notesController.text.trim(),
       );
 
-      final paymentId = await DatabaseService.insertPayment(payment);
-
-      final payloadMap = payment.toJson();
-      // Always include server order ID and customer name for reliable backend matching
-      if (_selectedOrder!.serverId != null && _selectedOrder!.serverId!.isNotEmpty) {
-        payloadMap['orderId'] = _selectedOrder!.serverId;
-      }
-      payloadMap['customerName'] = _selectedOrder!.customerName ?? '';
-
-      await SyncService.addToQueue(
-        entityType: 'payment',
-        entityId: paymentId,
-        action: 'create',
-        payload: payloadMap,
-      );
+      await DataService.insertPayment(payment);
 
       if (!mounted) return;
       Provider.of<AppProvider>(context, listen: false).refreshSyncCount();

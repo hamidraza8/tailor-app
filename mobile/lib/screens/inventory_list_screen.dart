@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/inventory.dart';
 import '../providers/app_provider.dart';
+import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../services/api_service.dart';
 import '../services/sync_service.dart';
@@ -32,7 +33,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 
   Future<void> _loadData() async {
     setState(() => _loading = true);
-    final items = await DatabaseService.getInventoryTransactions();
+    final items = await DataService.getInventoryTransactions();
     double total = 0;
     for (final i in items) {
       total += i.totalCost;
