@@ -28,8 +28,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   List<Payment> _payments = [];
   Map<String, dynamic>? _measurement;
-  List<Map<String, dynamic>> _photos = [];
-  List<Map<String, dynamic>> _voiceNotes = [];
   bool _loading = true;
   bool _updatingStatus = false;
   bool _isAdmin = false;
@@ -79,31 +77,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       }
     }
 
-    // Parse photos and voice notes from order API response
-    List<Map<String, dynamic>> photos = [];
-    List<Map<String, dynamic>> voiceNotes = [];
-    if (DataService.isOnlineMode && order != null && widget.serverOrderId != null) {
-      final orderResult = await ApiService.get('/orders/${widget.serverOrderId}');
-      if (orderResult['success'] == true && orderResult['photos'] is List) {
-        for (final f in (orderResult['photos'] as List)) {
-          final file = f as Map<String, dynamic>;
-          final ct = file['contentType']?.toString() ?? '';
-          if (ct.startsWith('audio/')) {
-            voiceNotes.add(file);
-          } else {
-            photos.add(file);
-          }
-        }
-      }
-    }
-
     if (!mounted) return;
     setState(() {
       _order = order;
       _payments = payments;
       _measurement = measurement;
-      _photos = photos;
-      _voiceNotes = voiceNotes;
       _loading = false;
     });
   }
@@ -213,21 +191,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Design photos from server
-            if (_photos.isNotEmpty)
+            if (order.photos.isNotEmpty)
               SizedBox(
                 height: 200,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _photos.length,
+                  itemCount: order.photos.length,
                   itemBuilder: (ctx, i) {
-                    final url = 'https://torin.pk${_photos[i]['url']}';
+                    final url = 'https://torin.pk${order.photos[i]['url']}';
                     return Padding(
                       padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(0),
                         child: Image.network(
                           url,
-                          width: _photos.length == 1 ? MediaQuery.of(ctx).size.width : 280,
+                          width: order.photos.length == 1 ? MediaQuery.of(ctx).size.width : 280,
                           height: 200,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => const SizedBox.shrink(),
@@ -354,12 +331,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     _detailRow('Special Instructions', order.specialInstructions!),
 
                   // Voice notes
-                  if (_voiceNotes.isNotEmpty) ...[
+                  if (order.voiceNotes.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text('Voice Notes',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    ..._voiceNotes.map((vn) => Padding(
+                    ...order.voiceNotes.map((vn) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: VoiceNotePlayer(
                               url: 'https://torin.pk${vn['url']}'),

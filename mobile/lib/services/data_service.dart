@@ -110,17 +110,25 @@ class DataService {
         final serverOrderId = result['id']?.toString();
         // Upload design photo if available
         if (serverOrderId != null && order.designPhotoPath != null && order.designPhotoPath!.isNotEmpty) {
-          await ApiService.uploadFile(
-            '/orders/$serverOrderId/photos',
-            order.designPhotoPath!,
-          );
+          try {
+            await ApiService.uploadFile(
+              '/orders/$serverOrderId/photos',
+              order.designPhotoPath!,
+            );
+          } catch (_) {
+            // Photo upload failed — order still created
+          }
         }
         // Upload voice note if available
         if (serverOrderId != null && _pendingVoiceNotePath != null) {
-          await ApiService.uploadFile(
-            '/files/upload?category=OrderDesign&entityId=$serverOrderId&entityType=Order',
-            _pendingVoiceNotePath!,
-          );
+          try {
+            await ApiService.uploadFile(
+              '/orders/$serverOrderId/photos',
+              _pendingVoiceNotePath!,
+            );
+          } catch (_) {
+            // Voice upload failed — order still created
+          }
           _pendingVoiceNotePath = null;
         }
         final localId = await DatabaseService.insertOrder(order.copyWith(synced: true));

@@ -7,6 +7,7 @@ import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/voice_note_widget.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 import 'receive_payment_screen.dart';
@@ -303,6 +304,55 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
                       ],
                     ),
                   ),
+
+                  // Photo thumbnail + Voice note
+                  if (order.photos.isNotEmpty || order.voiceNotes.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        // Photo thumbnails
+                        if (order.photos.isNotEmpty)
+                          ...order.photos.take(3).map((p) => Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    'https://torin.pk${p['url']}',
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.lavender,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.image, size: 20, color: AppColors.primary),
+                                    ),
+                                  ),
+                                ),
+                              )),
+                        if (order.photos.length > 3)
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.lavender,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text('+${order.photos.length - 3}',
+                                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 12)),
+                            ),
+                          ),
+                        const Spacer(),
+                        // Voice note player
+                        if (order.voiceNotes.isNotEmpty)
+                          VoiceNotePlayer(url: 'https://torin.pk${order.voiceNotes.first['url']}'),
+                      ],
+                    ),
+                  ],
 
                   // Due date & urgency
                   if (order.dueDate != null || order.isUrgent) ...[

@@ -24,6 +24,8 @@ class Order {
   final double labourSharePercentage;
   final double labourAmount;
   final DateTime? dueDate;
+  final List<Map<String, dynamic>> photos;
+  final List<Map<String, dynamic>> voiceNotes;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool synced;
@@ -53,6 +55,8 @@ class Order {
     this.isUrgent = false,
     this.labourSharePercentage = 35,
     this.labourAmount = 0,
+    this.photos = const [],
+    this.voiceNotes = const [],
     this.dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -123,8 +127,18 @@ class Order {
 
   factory Order.fromJson(Map<String, dynamic> json) {
     String? photoUrl;
-    if (json['photos'] is List && (json['photos'] as List).isNotEmpty) {
-      photoUrl = (json['photos'] as List).first['url']?.toString();
+    final allFiles = (json['photos'] is List) ? (json['photos'] as List) : [];
+    final photoFiles = <Map<String, dynamic>>[];
+    final voiceFiles = <Map<String, dynamic>>[];
+    for (final f in allFiles) {
+      final file = f as Map<String, dynamic>;
+      final ct = file['contentType']?.toString() ?? '';
+      if (ct.startsWith('audio/')) {
+        voiceFiles.add(file);
+      } else {
+        photoFiles.add(file);
+        photoUrl ??= file['url']?.toString();
+      }
     }
     return Order(
       serverId: json['id']?.toString(),
@@ -140,6 +154,8 @@ class Order {
       balanceAmount: (json['balanceAmount'] as num?)?.toDouble() ?? 0,
       discount: (json['discount'] as num?)?.toDouble() ?? 0,
       designPhotoUrl: photoUrl,
+      photos: photoFiles,
+      voiceNotes: voiceFiles,
       measurementServerId: json['measurementId']?.toString(),
       orderNumber: json['orderNumber'] as String?,
       notes: json['designNotes'] as String? ?? json['notes'] as String?,
@@ -201,6 +217,8 @@ class Order {
     bool? isUrgent,
     double? labourSharePercentage,
     double? labourAmount,
+    List<Map<String, dynamic>>? photos,
+    List<Map<String, dynamic>>? voiceNotes,
     DateTime? dueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -231,6 +249,8 @@ class Order {
       isUrgent: isUrgent ?? this.isUrgent,
       labourSharePercentage: labourSharePercentage ?? this.labourSharePercentage,
       labourAmount: labourAmount ?? this.labourAmount,
+      photos: photos ?? this.photos,
+      voiceNotes: voiceNotes ?? this.voiceNotes,
       dueDate: dueDate ?? this.dueDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
