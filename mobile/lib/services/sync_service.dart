@@ -1,24 +1,24 @@
 import 'dart:convert';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:http/http.dart' as http;
 import '../models/sync_item.dart';
 import '../models/order.dart';
 import '../models/customer.dart';
 import '../models/payment.dart';
 import '../models/asset.dart';
 import '../models/inventory.dart';
+import '../utils/constants.dart';
 import 'database_service.dart';
 import 'api_service.dart';
 
 class SyncService {
   static Future<bool> isOnline() async {
     try {
-      final result = await Connectivity().checkConnectivity();
-      if (result is List) {
-        return !(result as List).contains(ConnectivityResult.none);
-      }
-      return result != ConnectivityResult.none;
+      final response = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/health'))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode >= 200 && response.statusCode < 500;
     } catch (_) {
-      return true;
+      return false;
     }
   }
 

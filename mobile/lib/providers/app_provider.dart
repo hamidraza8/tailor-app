@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/sync_service.dart';
 import '../services/auth_service.dart';
 
@@ -11,6 +10,7 @@ class AppProvider extends ChangeNotifier {
   bool _isSyncing = false;
   Map<String, dynamic>? _user;
   Timer? _syncTimer;
+  Timer? _connectivityTimer;
 
   bool get isOnline => _isOnline;
   int get pendingSyncCount => _pendingSyncCount;
@@ -23,29 +23,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    // Check connectivity
-    try {
-      _isOnline = await SyncService.isOnline();
-    } catch (_) {
-      _isOnline = true; // Assume online on web if check fails
-    }
-
-    // Listen for connectivity changes
-    try {
-      Connectivity().onConnectivityChanged.listen((result) {
-        if (result is List) {
-          _isOnline = !(result as List).contains(ConnectivityResult.none);
-        } else {
-          _isOnline = result != ConnectivityResult.none;
-        }
-        notifyListeners();
-        if (_isOnline) {
-          syncNow();
-        }
-      });
-    } catch (_) {
-      // Connectivity listening not supported on this platform
-    }
+    // Check connectivity by pinging server
+    _isOnline = await SyncService.isOnline();
 
     // Load user
     _user = await AuthService.getUser();
@@ -53,7 +32,15 @@ class AppProvider extends ChangeNotifier {
     // Load pending sync count
     await refreshSyncCount();
 
-    // Start periodic sync (force retry to pick up previously exhausted items)
+    // Periodically check connectivity and sync (every 30 seconds)
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      final wasOnline = _isOnline;
+      _isOnline = await SyncService.isOnline();
+      if (_isOnline != wasOnline) notifyListeners();
+      if (_isOnline) syncNow();
+    });
+
+    // Force retry sync every 2 minutes
     _syncTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       syncNow(forceRetry: true);
     });
@@ -101,6 +88,7 @@ class AppProvider extends ChangeNotifier {
   @override
   void dispose() {
     _syncTimer?.cancel();
+    _connectivityTimer?.cancel();
     super.dispose();
   }
 }
