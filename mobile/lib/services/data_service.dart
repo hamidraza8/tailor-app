@@ -196,12 +196,22 @@ class DataService {
     return DatabaseService.getPaymentsByOrder(orderId);
   }
 
+  /// Maps mobile payment method names to backend enum values.
+  static String _mapPaymentMethod(String method) {
+    switch (method) {
+      case 'Bank Transfer':
+        return 'BankTransfer';
+      default:
+        return method;
+    }
+  }
+
   static Future<int> insertPayment(Payment payment) async {
     if (_isOnlineMode) {
       final result = await ApiService.post('/payments', {
         'orderId': payment.orderServerId ?? payment.orderId?.toString(),
         'amount': payment.amount,
-        'method': payment.method,
+        'method': _mapPaymentMethod(payment.method),
         'paymentDate': payment.paidAt.toUtc().toIso8601String(),
         'notes': payment.notes,
       });

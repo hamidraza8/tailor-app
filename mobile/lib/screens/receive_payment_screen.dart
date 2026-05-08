@@ -4,6 +4,7 @@ import '../models/order.dart';
 import '../models/payment.dart';
 import '../providers/app_provider.dart';
 import '../services/data_service.dart';
+import '../services/database_service.dart';
 import '../widgets/amount_input.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -200,7 +201,9 @@ class _ReceivePaymentScreenState extends State<ReceivePaymentScreen> {
                     )
                   else
                     ...(_ordersWithBalance.map((order) {
-                      final isSelected = _selectedOrder?.id == order.id;
+                      final isSelected = DataService.isOnlineMode
+                          ? _selectedOrder?.serverId == order.serverId
+                          : _selectedOrder?.id == order.id;
                       return GestureDetector(
                         onTap: () {
                           setState(() {
