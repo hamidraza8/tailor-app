@@ -286,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.55,
+        childAspectRatio: 1.35,
         children: [
           StatCard(
             icon: Icons.trending_up,
@@ -535,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 0.95,
+          childAspectRatio: 1.0,
           children: [
             _actionTile(Icons.content_cut, 'New Order', AppColors.primary, () => _nav('/new-order')),
             _actionTile(Icons.list_alt, 'Orders', AppColors.blue, () => _nav('/today-orders')),
