@@ -209,8 +209,9 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       );
       final orderId = await DataService.insertOrder(order);
 
-      // Save advance payment if given
-      if (advance > 0) {
+      // Save advance payment if given (only in offline mode — online mode
+      // handles it via advancePayment field in the order API)
+      if (advance > 0 && !DataService.isOnlineMode) {
         await DataService.insertPayment(
           _buildPayment(orderId, advance),
         );
