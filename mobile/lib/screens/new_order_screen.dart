@@ -141,7 +141,9 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
     final customer = Customer(name: name, phone: phone);
     final id = await DataService.insertCustomer(customer);
 
-    final saved = customer.copyWith(id: id);
+    final saved = customer.copyWith(
+        id: id,
+        serverId: DataService.lastCreatedCustomerServerId);
     setState(() {
       _selectedCustomer = saved;
       _addingNew = false;
@@ -171,6 +173,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       // Save measurement
       final measurement = Measurement(
         customerId: _selectedCustomer!.id,
+        customerServerId: _selectedCustomer!.serverId,
         orderType: _selectedOrderType!,
         chest: double.tryParse(_chestController.text),
         waist: double.tryParse(_waistController.text),
@@ -188,6 +191,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       final total = stitching + material;
       final order = Order(
         customerId: _selectedCustomer!.id,
+        customerServerId: _selectedCustomer!.serverId,
         customerName: _selectedCustomer!.name,
         customerPhone: _selectedCustomer!.phone,
         orderType: _selectedOrderType!,

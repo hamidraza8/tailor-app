@@ -79,8 +79,8 @@ class DataService {
   /// In online mode, finds/creates customer first, then creates order via API.
   static Future<int> insertOrder(Order order) async {
     if (_isOnlineMode) {
-      // Step 1: Find or create customer
-      String? customerId = order.customerServerId;
+      // Step 1: Use existing customer server ID or find/create
+      String? customerId = order.customerServerId ?? lastCreatedCustomerServerId;
       if (customerId == null && order.customerName != null) {
         customerId = await _findOrCreateCustomer(
             order.customerName!, order.customerPhone ?? '');
@@ -93,6 +93,7 @@ class DataService {
       final apiPayload = {
         'customerId': customerId,
         'orderType': order.orderType,
+        'measurementId': lastCreatedMeasurementServerId,
         'stitchingAmount': order.stitchingAmount,
         'materialAmount': order.materialAmount,
         'discount': 0,
@@ -156,6 +157,9 @@ class DataService {
     return DatabaseService.getCustomers(search: search);
   }
 
+  /// Stores the server ID of the last created customer (online mode).
+  static String? lastCreatedCustomerServerId;
+
   static Future<int> insertCustomer(Customer customer) async {
     if (_isOnlineMode) {
       final result = await ApiService.post('/customers', {
@@ -166,7 +170,9 @@ class DataService {
         'notes': customer.notes,
       });
       if (result['success'] == true) {
-        final localId = await DatabaseService.insertCustomer(customer.copyWith(synced: true));
+        lastCreatedCustomerServerId = result['id']?.toString();
+        final localId = await DatabaseService.insertCustomer(
+            customer.copyWith(synced: true));
         return localId;
       }
       throw Exception(result['message'] ?? 'Failed to create customer');
@@ -305,8 +311,34 @@ class DataService {
 
   // ─── Measurements ───
 
+  /// Stores the server ID of the last created measurement (online mode).
+  static String? lastCreatedMeasurementServerId;
+
   static Future<int> insertMeasurement(Measurement measurement) async {
     if (_isOnlineMode) {
+      // Need customer server ID for the API
+      final customerServerId = measurement.customerServerId ?? lastCreatedCustomerServerId;
+      if (customerServerId != null) {
+        final result = await ApiService.post('/customers/measurements', {
+          'customerId': customerServerId,
+          'label': measurement.orderType,
+          'length': measurement.shirtLength,
+          'shoulder': measurement.shoulder,
+          'chest': measurement.chest,
+          'waist': measurement.waist,
+          'hip': measurement.hip,
+          'sleeveLength': measurement.armLength,
+          'neck': measurement.neckSize,
+          'trouserLength': measurement.trouserLength,
+          'trouserWaist': measurement.trouserWaist,
+          'inseam': measurement.inseam,
+          'bottomWidth': measurement.bottomWidth,
+          'notes': measurement.notes,
+        });
+        if (result['success'] == true) {
+          lastCreatedMeasurementServerId = result['id']?.toString();
+        }
+      }
       return DatabaseService.insertMeasurement(measurement);
     }
     final id = await DatabaseService.insertMeasurement(measurement);
