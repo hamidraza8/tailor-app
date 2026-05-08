@@ -67,9 +67,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Future<void> _updateStatus(String newStatus) async {
     if (_order == null) return;
-    await DataService.updateOrderStatus(_order!, newStatus);
-    if (!DataService.isOnlineMode && mounted) {
-      Provider.of<AppProvider>(context, listen: false).syncNow();
+    final success = await DataService.updateOrderStatus(_order!, newStatus);
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Status updated to $newStatus'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      if (!DataService.isOnlineMode) {
+        Provider.of<AppProvider>(context, listen: false).syncNow();
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update status'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
     _loadOrder();
   }
@@ -563,7 +579,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             : AppColors.textLight.withOpacity(0.3);
 
         return GestureDetector(
-          onTap: _isAdmin && !isCompleted && index == currentIndex + 1
+          behavior: HitTestBehavior.opaque,
+          onTap: !isCompleted && index == currentIndex + 1
               ? () => _updateStatus(status)
               : null,
           child: Row(
@@ -601,7 +618,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ),
               ),
-              if (_isAdmin && !isCompleted && index == currentIndex + 1)
+              if (!isCompleted && index == currentIndex + 1)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
