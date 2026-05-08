@@ -189,19 +189,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Design photo
-            if (order.designPhotoPath != null &&
-                order.designPhotoPath!.isNotEmpty &&
-                order.designPhotoPath!.startsWith('http'))
-              Image.network(
-                order.designPhotoPath!,
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 220,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.image, size: 60, color: Colors.grey),
+            // Design photo — only show valid URLs
+            if (order.designPhotoUrl != null &&
+                order.designPhotoUrl!.isNotEmpty &&
+                Uri.tryParse(order.designPhotoUrl!)?.hasScheme == true)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+                child: Image.network(
+                  order.designPhotoUrl!,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),
               ),
 

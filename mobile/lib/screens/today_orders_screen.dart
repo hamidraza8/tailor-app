@@ -180,185 +180,261 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
 
   Widget _buildOrderCard(Order order) {
     final hasBalance = order.balanceAmount > 0;
+    final statusColor = OrderStatus.colorFor(order.status);
+    final isOverdue = order.dueDate != null && order.dueDate!.isBefore(DateTime.now())
+        && order.status != OrderStatus.delivered;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.pushNamed(context, '/order-detail',
             arguments: DataService.isOnlineMode ? order.serverId : order.id),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
+        child: Column(
+          children: [
+            // Status accent bar
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    child: Text(
-                      order.customerName?.isNotEmpty == true
-                          ? order.customerName![0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold),
-                    ),
+                  // Top row: avatar, name, status
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.primary, AppColors.primaryLight],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            order.customerName?.isNotEmpty == true
+                                ? order.customerName![0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.customerName ?? 'Unknown',
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(Icons.checkroom, size: 13, color: AppColors.textLight),
+                                const SizedBox(width: 4),
+                                Text(order.orderType,
+                                    style: const TextStyle(
+                                        color: AppColors.textMedium, fontSize: 12)),
+                                if (order.orderNumber != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(order.orderNumber!,
+                                      style: TextStyle(
+                                          color: AppColors.textLight, fontSize: 11)),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      StatusBadge(status: order.status),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                  const SizedBox(height: 14),
+
+                  // Amount summary row
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          order.customerName ?? 'Unknown',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          order.orderType,
-                          style: const TextStyle(
-                              color: AppColors.textMedium, fontSize: 13),
-                        ),
+                        _amountColumn('Total', order.totalAmount, AppColors.textDark),
+                        Container(width: 1, height: 28, color: Colors.grey.shade300),
+                        _amountColumn('Paid', order.paidAmount, AppColors.success),
+                        Container(width: 1, height: 28, color: Colors.grey.shade300),
+                        _amountColumn('Due', order.balanceAmount,
+                            hasBalance ? AppColors.error : AppColors.success),
                       ],
                     ),
                   ),
-                  StatusBadge(status: order.status),
-                ],
-              ),
 
-              const SizedBox(height: 12),
-
-              // Amount row
-              Row(
-                children: [
-                  _infoChip(Icons.payments, Helpers.formatCurrency(order.totalAmount),
-                      AppColors.primary),
-                  const SizedBox(width: 8),
-                  if (hasBalance)
-                    _infoChip(
-                      Icons.warning,
-                      'Due: ${Helpers.formatCurrency(order.balanceAmount)}',
-                      AppColors.error,
-                    ),
-                  const Spacer(),
-                  if (order.dueDate != null)
-                    Text(
-                      Helpers.daysUntil(order.dueDate!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: order.dueDate!.isBefore(DateTime.now())
-                            ? AppColors.error
-                            : AppColors.textMedium,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Action buttons
-              Row(
-                children: [
-                  if (order.customerPhone != null &&
-                      order.customerPhone!.isNotEmpty) ...[
-                    _actionButton(
-                      Icons.call,
-                      'Call',
-                      AppColors.green,
-                      () => _callCustomer(order.customerPhone!),
-                    ),
-                    const SizedBox(width: 8),
-                    _actionButton(
-                      Icons.chat,
-                      'WhatsApp',
-                      const Color(0xFF25D366),
-                      () => _whatsAppCustomer(order.customerPhone!),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (order.status != OrderStatus.ready &&
-                      order.status != OrderStatus.delivered)
-                    _actionButton(
-                      Icons.check_circle_outline,
-                      'Ready',
-                      AppColors.success,
-                      () => _markReady(order),
-                    ),
-                  if (hasBalance) ...[
-                    const SizedBox(width: 8),
-                    _actionButton(
-                      Icons.payments,
-                      'Payment',
-                      AppColors.orange,
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ReceivePaymentScreen(
-                              preSelectedOrderId: order.id),
-                        ),
-                      ).then((_) => _loadOrders()),
+                  // Due date & urgency
+                  if (order.dueDate != null || order.isUrgent) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        if (order.isUrgent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bolt, size: 12, color: AppColors.error),
+                                const SizedBox(width: 2),
+                                Text('Urgent', style: TextStyle(
+                                    color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        if (order.dueDate != null) ...[
+                          Icon(Icons.schedule, size: 13,
+                              color: isOverdue ? AppColors.error : AppColors.textLight),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${Helpers.formatDate(order.dueDate!)} (${Helpers.daysUntil(order.dueDate!)})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isOverdue ? AppColors.error : AppColors.textMedium,
+                              fontWeight: isOverdue ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
-                  if (_isAdmin) ...[
-                    const SizedBox(width: 8),
-                    _actionButton(
-                      Icons.delete,
-                      'Delete',
-                      AppColors.error,
-                      () => _deleteOrder(order),
-                    ),
-                  ],
+
+                  const SizedBox(height: 12),
+
+                  // Action row — icon buttons only
+                  Row(
+                    children: [
+                      if (order.customerPhone != null &&
+                          order.customerPhone!.isNotEmpty) ...[
+                        _iconAction(Icons.call, AppColors.green,
+                            () => _callCustomer(order.customerPhone!)),
+                        const SizedBox(width: 6),
+                        _iconAction(Icons.chat_bubble, const Color(0xFF25D366),
+                            () => _whatsAppCustomer(order.customerPhone!)),
+                        const SizedBox(width: 6),
+                      ],
+                      if (order.status != OrderStatus.ready &&
+                          order.status != OrderStatus.delivered)
+                        _pillAction(Icons.check, 'Mark Ready', AppColors.success,
+                            () => _markReady(order)),
+                      if (hasBalance) ...[
+                        const SizedBox(width: 6),
+                        _pillAction(Icons.payments, 'Pay', AppColors.orange, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReceivePaymentScreen(
+                                  preSelectedOrderId: order.id),
+                            ),
+                          ).then((_) => _loadOrders());
+                        }),
+                      ],
+                      const Spacer(),
+                      if (_isAdmin)
+                        _iconAction(Icons.delete_outline, AppColors.error.withOpacity(0.6),
+                            () => _deleteOrder(order)),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _infoChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget _amountColumn(String label, double amount, Color color) {
+    return Expanded(
+      child: Column(
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(text,
-              style: TextStyle(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(label, style: TextStyle(
+              fontSize: 10, color: AppColors.textLight, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(
+            Helpers.formatCurrency(amount),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _actionButton(
-      IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _iconAction(IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 17, color: color),
+      ),
+    );
+  }
+
+  Widget _pillAction(IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: color),
+            Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
             Text(label,
                 style: TextStyle(
-                    color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+                    color: color, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
