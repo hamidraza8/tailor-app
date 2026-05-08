@@ -40,6 +40,7 @@ class OrderTypes {
 }
 
 class OrderStatus {
+  static const String received = 'Received';
   static const String pending = 'Pending';
   static const String cutting = 'Cutting';
   static const String stitching = 'Stitching';
@@ -48,7 +49,7 @@ class OrderStatus {
   static const String delivered = 'Delivered';
 
   static const List<String> all = [
-    pending,
+    received,
     cutting,
     stitching,
     finishing,
@@ -58,6 +59,7 @@ class OrderStatus {
 
   static Color colorFor(String status) {
     switch (status) {
+      case received:
       case pending:
         return AppColors.warning;
       case cutting:

@@ -43,6 +43,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     List<Payment> payments = [];
     if (DataService.isOnlineMode && widget.serverOrderId != null) {
       order = await DataService.getOrderByServerId(widget.serverOrderId!);
+      // Fetch payments from API for this order
+      if (order != null) {
+        final result = await ApiService.get('/payments?orderId=${widget.serverOrderId}');
+        if (result['success'] == true && result['data'] is List) {
+          payments = (result['data'] as List)
+              .map((e) => Payment.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
     } else if (widget.orderId != null) {
       order = await DataService.getOrderById(widget.orderId!);
       if (order != null) {
@@ -245,6 +254,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                   // Details
                   _detailRow('Order Type', order.orderType),
+                  if (order.serverId != null)
+                    _detailRow('Order #', order.serverId!.substring(0, 8).toUpperCase()),
                   _detailRow('Created', Helpers.formatDateTime(order.createdAt)),
                   if (order.dueDate != null) ...[
                     _detailRow('Due Date', Helpers.formatDate(order.dueDate!)),

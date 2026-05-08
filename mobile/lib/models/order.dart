@@ -108,19 +108,24 @@ class Order {
   }
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Extract first photo URL if available
+    String? photoUrl;
+    if (json['photos'] is List && (json['photos'] as List).isNotEmpty) {
+      photoUrl = (json['photos'] as List).first['url']?.toString();
+    }
     return Order(
       serverId: json['id']?.toString(),
       customerName: json['customerName'] as String?,
       customerPhone: json['customerPhone'] as String?,
       orderType: json['orderType'] as String? ?? '',
-      status: json['status'] as String? ?? 'Pending',
+      status: json['status'] as String? ?? 'Received',
       stitchingAmount: (json['stitchingAmount'] as num?)?.toDouble() ?? 0,
       materialAmount: (json['materialAmount'] as num?)?.toDouble() ?? 0,
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0,
       balanceAmount: (json['balanceAmount'] as num?)?.toDouble() ?? 0,
-      designPhotoUrl: json['designPhotoUrl'] as String?,
-      notes: json['notes'] as String?,
+      designPhotoUrl: photoUrl,
+      notes: json['designNotes'] as String? ?? json['notes'] as String?,
       dueDate: json['dueDate'] != null
           ? DateTime.parse(json['dueDate'] as String)
           : null,
