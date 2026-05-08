@@ -15,6 +15,8 @@ class DataService {
   static bool _isOnlineMode = true;
 
   static bool get isOnlineMode => _isOnlineMode;
+  static String? _pendingVoiceNotePath;
+  static void setPendingVoiceNote(String? path) => _pendingVoiceNotePath = path;
 
   static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -105,6 +107,22 @@ class DataService {
 
       final result = await ApiService.post('/orders', apiPayload);
       if (result['success'] == true) {
+        final serverOrderId = result['id']?.toString();
+        // Upload design photo if available
+        if (serverOrderId != null && order.designPhotoPath != null && order.designPhotoPath!.isNotEmpty) {
+          await ApiService.uploadFile(
+            '/orders/$serverOrderId/photos',
+            order.designPhotoPath!,
+          );
+        }
+        // Upload voice note if available
+        if (serverOrderId != null && _pendingVoiceNotePath != null) {
+          await ApiService.uploadFile(
+            '/files/upload?category=OrderDesign&entityId=$serverOrderId&entityType=Order',
+            _pendingVoiceNotePath!,
+          );
+          _pendingVoiceNotePath = null;
+        }
         final localId = await DatabaseService.insertOrder(order.copyWith(synced: true));
         return localId;
       }

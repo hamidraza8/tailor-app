@@ -8,6 +8,7 @@ import '../providers/app_provider.dart';
 import '../services/data_service.dart';
 import '../services/database_service.dart';
 import '../widgets/photo_capture_widget.dart';
+import '../widgets/voice_note_widget.dart';
 import '../widgets/amount_input.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -37,6 +38,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
 
   // Step 3: Design Photo
   String? _designPhotoPath;
+  String? _voiceNotePath;
 
   // Step 4: Measurements
   final _chestController = TextEditingController();
@@ -696,9 +698,31 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
             onPhotoCaptured: (path) =>
                 setState(() => _designPhotoPath = path),
           ),
+          const SizedBox(height: 24),
+
+          // Voice note
+          const Text('Voice Note / وائس نوٹ',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark)),
+          const SizedBox(height: 4),
+          const Text(
+            'Record design instructions or special notes',
+            style: TextStyle(color: AppColors.textMedium, fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          VoiceNoteRecorder(
+            recordingPath: _voiceNotePath,
+            onRecorded: (path) {
+              setState(() => _voiceNotePath = path);
+              DataService.setPendingVoiceNote(path);
+            },
+          ),
+
           const SizedBox(height: 16),
           Text(
-            'You can skip this step if no photo is needed',
+            'You can skip photo and voice note if not needed',
             style: TextStyle(
               color: AppColors.textLight,
               fontSize: 13,
