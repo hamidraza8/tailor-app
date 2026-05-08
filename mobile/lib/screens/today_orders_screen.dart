@@ -128,11 +128,17 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Today's Orders"),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: const Text("Orders", style: TextStyle(fontWeight: FontWeight.w600)),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
           tabs: [
             Tab(text: "Today (${_todayOrders.length})"),
             Tab(text: "All Active (${_activeOrders.length})"),
@@ -140,7 +146,7 @@ class _TodayOrdersScreenState extends State<TodayOrdersScreen>
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : TabBarView(
               controller: _tabController,
               children: [

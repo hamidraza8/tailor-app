@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import '../widgets/big_action_button.dart';
+import '../widgets/premium_card.dart';
+import '../widgets/stat_card.dart';
 import '../widgets/sync_indicator.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -9,8 +11,6 @@ import '../models/order.dart';
 import '../models/payment.dart';
 import '../models/inventory.dart';
 import '../models/asset.dart';
-import '../services/database_service.dart';
-import '../services/api_service.dart';
 import '../services/data_service.dart';
 import 'package:intl/intl.dart';
 import 'partner_balances_screen.dart';
@@ -27,30 +27,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
 
-  // Quick stats
   double _totalRevenue = 0;
   double _totalCollected = 0;
   int _activeOrderCount = 0;
   int _todayOrderCount = 0;
-
-  // Delivery
   int _overdueCount = 0;
   int _dueSoonCount = 0;
   int _onTrackCount = 0;
-
-  // Attention
   int _unpaidOrderCount = 0;
   double _unpaidBalance = 0;
   int _pendingExpenseCount = 0;
   int _pendingInventoryCount = 0;
-
-  // Financials
   double _totalExpenses = 0;
-  double _totalBalance = 0;
   double _collectionRate = 0;
   double _estimatedProfit = 0;
-
-  // Inventory & Assets
   double _totalInventoryValue = 0;
   int _inventoryItemCount = 0;
   double _totalAssetValue = 0;
@@ -66,14 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loading = true);
 
     final results = await Future.wait([
-      DataService.getOrders(),                     // 0
-      DataService.getActiveOrders(),               // 1
-      DataService.getTodayOrders(),                // 2
-      DataService.getOrdersWithBalance(),          // 3
-      DataService.getAllPayments(),                // 4
-      DataService.getSpendings(),                  // 5
-      DataService.getInventoryTransactions(),      // 6
-      DataService.getAssets(),                     // 7
+      DataService.getOrders(),
+      DataService.getActiveOrders(),
+      DataService.getTodayOrders(),
+      DataService.getOrdersWithBalance(),
+      DataService.getAllPayments(),
+      DataService.getSpendings(),
+      DataService.getInventoryTransactions(),
+      DataService.getAssets(),
     ]);
 
     final allOrders = results[0] as List<Order>;
@@ -85,43 +75,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final inventory = results[6] as List<InventoryTransaction>;
     final assets = results[7] as List<Asset>;
 
-    // Revenue
     double revenue = 0;
-    for (final o in allOrders) {
-      revenue += o.totalAmount;
-    }
-
-    // Collections
+    for (final o in allOrders) revenue += o.totalAmount;
     double collected = 0;
-    for (final p in payments) {
-      collected += p.amount;
-    }
-
-    // Unpaid
+    for (final p in payments) collected += p.amount;
     double unpaidBal = 0;
-    for (final o in unpaidOrders) {
-      unpaidBal += o.balanceAmount;
-    }
+    for (final o in unpaidOrders) unpaidBal += o.balanceAmount;
 
-    // Delivery tracking
     final now = DateTime.now();
     final weekFromNow = now.add(const Duration(days: 7));
     int overdue = 0, dueSoon = 0, onTrack = 0;
     for (final o in activeOrders) {
       if (o.dueDate != null) {
-        if (o.dueDate!.isBefore(now)) {
-          overdue++;
-        } else if (o.dueDate!.isBefore(weekFromNow)) {
-          dueSoon++;
-        } else {
-          onTrack++;
-        }
+        if (o.dueDate!.isBefore(now)) overdue++;
+        else if (o.dueDate!.isBefore(weekFromNow)) dueSoon++;
+        else onTrack++;
       } else {
         onTrack++;
       }
     }
 
-    // Expenses (from spendings with ResultType = Expense)
     double totalExp = 0;
     int pendingExp = 0;
     for (final s in spendingsRaw) {
@@ -130,7 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (status == 'PendingApproval' || status == 'Pending') pendingExp++;
     }
 
-    // Inventory
     double invValue = 0;
     int pendingInv = 0;
     for (final i in inventory) {
@@ -138,11 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (i.status == 'Pending') pendingInv++;
     }
 
-    // Assets
     double assetVal = 0;
-    for (final a in assets) {
-      assetVal += a.totalValue;
-    }
+    for (final a in assets) assetVal += a.totalValue;
 
     setState(() {
       _totalRevenue = revenue;
@@ -157,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _pendingExpenseCount = pendingExp;
       _pendingInventoryCount = pendingInv;
       _totalExpenses = totalExp;
-      _totalBalance = unpaidBal;
       _collectionRate = revenue > 0 ? (collected / revenue * 100) : 0;
       _estimatedProfit = collected - totalExp;
       _totalInventoryValue = invValue;
@@ -168,129 +136,186 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _navigateAndRefresh(String route) {
+  void _nav(String route) {
     Navigator.pushNamed(context, route).then((_) => _loadDashboard());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Column(
           children: [
-            Icon(Icons.content_cut, size: 24),
-            SizedBox(width: 8),
-            Text('Tailor App'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _loadDashboard,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildGreeting(),
-                          const SizedBox(height: 16),
-                          _buildQuickStats(),
-                          const SizedBox(height: 20),
-                          _buildDeliveryTracking(),
-                          const SizedBox(height: 20),
-                          _buildNeedsAttention(),
-                          const SizedBox(height: 20),
-                          _buildFinancials(),
-                          const SizedBox(height: 20),
-                          _buildInventoryAssets(),
-                          const SizedBox(height: 24),
-                          _buildBusinessFinance(),
-                          const SizedBox(height: 20),
-                          _buildQuickActions(),
-                          const SizedBox(height: 16),
-                        ],
+            // Gradient Header
+            _buildHeader(),
+            // Content
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : RefreshIndicator(
+                      color: AppColors.primary,
+                      onRefresh: _loadDashboard,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
+                            // Stats overlapping header
+                            Transform.translate(
+                              offset: const Offset(0, -30),
+                              child: _buildStats(),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildDeliveryTracking(),
+                                  const SizedBox(height: 20),
+                                  _buildNeedsAttention(),
+                                  const SizedBox(height: 20),
+                                  _buildFinancials(),
+                                  const SizedBox(height: 20),
+                                  _buildQuickActions(),
+                                  const SizedBox(height: 20),
+                                  _buildBusinessFinance(),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-          ),
-          const SyncIndicator(),
-        ],
+            ),
+            const SyncIndicator(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildGreeting() {
+  Widget _buildHeader() {
     return Consumer<AppProvider>(
       builder: (context, provider, _) {
-        final name = provider.user?['name'] as String? ?? 'there';
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hello, $name!',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark),
+        final name = provider.user?['name'] as String? ??
+            provider.user?['fullName'] as String? ?? 'there';
+        final hour = DateTime.now().hour;
+        final greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 50),
+          decoration: const BoxDecoration(
+            gradient: AppColors.headerGradient,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(AppRadius.header),
+              bottomRight: Radius.circular(AppRadius.header),
             ),
-            const SizedBox(height: 2),
-            Text(
-              DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now()),
-              style: const TextStyle(fontSize: 14, color: AppColors.textMedium),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$greeting,',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Settings + Profile
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/settings'),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.settings_outlined,
+                            color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  DateFormat('EEEE, dd MMM yyyy').format(DateTime.now()),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildQuickStats() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.6,
-      children: [
-        _statCard('Revenue', Helpers.formatCurrency(_totalRevenue), Icons.trending_up, AppColors.green),
-        _statCard('Collections', Helpers.formatCurrency(_totalCollected), Icons.payments, AppColors.orange),
-        _statCard('Active Orders', '$_activeOrderCount', Icons.list_alt, AppColors.blue),
-        _statCard("Today's Orders", '$_todayOrderCount', Icons.today, AppColors.teal),
-      ],
-    );
-  }
-
-  Widget _statCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildStats() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.55,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
-              Flexible(child: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-            ],
+          StatCard(
+            icon: Icons.trending_up,
+            iconColor: AppColors.success,
+            value: Helpers.formatCurrency(_totalRevenue),
+            label: 'Revenue',
+            onTap: () => _nav('/payments'),
           ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color), overflow: TextOverflow.ellipsis),
+          StatCard(
+            icon: Icons.payments,
+            iconColor: AppColors.orange,
+            value: Helpers.formatCurrency(_totalCollected),
+            label: 'Collected',
+            onTap: () => _nav('/payments'),
+          ),
+          StatCard(
+            icon: Icons.list_alt,
+            iconColor: AppColors.blue,
+            value: '$_activeOrderCount',
+            label: 'Active Orders',
+            onTap: () => _nav('/today-orders'),
+          ),
+          StatCard(
+            icon: Icons.today,
+            iconColor: AppColors.primary,
+            value: '$_todayOrderCount',
+            label: "Today's Orders",
+            onTap: () => _nav('/today-orders'),
+          ),
         ],
       ),
     );
@@ -300,34 +325,34 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Delivery Status', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        _sectionTitle('Delivery Status'),
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _deliveryBox('Overdue', '$_overdueCount', AppColors.error)),
+            Expanded(child: _deliveryPill('Overdue', _overdueCount, AppColors.error)),
             const SizedBox(width: 10),
-            Expanded(child: _deliveryBox('Due Soon', '$_dueSoonCount', AppColors.warning)),
+            Expanded(child: _deliveryPill('Due Soon', _dueSoonCount, AppColors.warning)),
             const SizedBox(width: 10),
-            Expanded(child: _deliveryBox('On Track', '$_onTrackCount', AppColors.success)),
+            Expanded(child: _deliveryPill('On Track', _onTrackCount, AppColors.success)),
           ],
         ),
       ],
     );
   }
 
-  Widget _deliveryBox(String label, String count, Color color) {
+  Widget _deliveryPill(String label, int count, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+          Text('$count',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -335,59 +360,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNeedsAttention() {
     final items = <Widget>[];
-
     if (_unpaidOrderCount > 0) {
-      items.add(_attentionRow(
-        Icons.warning_amber_rounded,
-        '$_unpaidOrderCount unpaid orders (${Helpers.formatCurrency(_unpaidBalance)})',
-        AppColors.error,
-        () => _navigateAndRefresh('/today-orders'),
-      ));
+      items.add(_attentionRow(Icons.warning_amber_rounded,
+          '$_unpaidOrderCount unpaid (${Helpers.formatCurrency(_unpaidBalance)})', AppColors.error,
+          () => _nav('/today-orders')));
     }
     if (_overdueCount > 0) {
-      items.add(_attentionRow(
-        Icons.schedule,
-        '$_overdueCount overdue orders',
-        AppColors.error,
-        () => _navigateAndRefresh('/today-orders'),
-      ));
+      items.add(_attentionRow(Icons.schedule, '$_overdueCount overdue orders',
+          AppColors.error, () => _nav('/today-orders')));
     }
     if (_pendingExpenseCount > 0) {
-      items.add(_attentionRow(
-        Icons.receipt_long,
-        '$_pendingExpenseCount pending expenses',
-        AppColors.warning,
-        () => _navigateAndRefresh('/expenses'),
-      ));
+      items.add(_attentionRow(Icons.receipt_long, '$_pendingExpenseCount pending expenses',
+          AppColors.warning, () => _nav('/expenses')));
     }
     if (_pendingInventoryCount > 0) {
-      items.add(_attentionRow(
-        Icons.inventory_2,
-        '$_pendingInventoryCount pending inventory items',
-        AppColors.warning,
-        () => _navigateAndRefresh('/inventory'),
-      ));
+      items.add(_attentionRow(Icons.inventory_2, '$_pendingInventoryCount pending inventory',
+          AppColors.warning, () => _nav('/inventory')));
     }
-
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          children: [
-            Icon(Icons.notifications_active, size: 18, color: AppColors.warning),
-            SizedBox(width: 6),
-            Text('Needs Attention', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          ],
-        ),
+        _sectionTitle('Needs Attention', icon: Icons.notifications_active, iconColor: AppColors.warning),
         const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.warning.withOpacity(0.2)),
-          ),
+        PremiumCard(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
           child: Column(children: items),
         ),
       ],
@@ -397,15 +395,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _attentionRow(IconData icon, String text, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(width: 10),
-            Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w500))),
-            Icon(Icons.arrow_forward_ios, size: 14, color: color.withOpacity(0.5)),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 16, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(text,
+                style: TextStyle(fontSize: 13, color: AppColors.textDark, fontWeight: FontWeight.w500))),
+            Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.textLight),
           ],
         ),
       ),
@@ -416,195 +422,86 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Financials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        _sectionTitle('Financials'),
         const SizedBox(height: 10),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Collection rate with progress
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Collection Rate', style: TextStyle(fontSize: 13, color: AppColors.textMedium)),
-                    Text('${_collectionRate.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: _collectionRate / 100,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _collectionRate >= 80 ? AppColors.success : _collectionRate >= 50 ? AppColors.warning : AppColors.error,
-                    ),
-                    minHeight: 6,
-                  ),
-                ),
-                const Divider(height: 24),
-                _finRow('Outstanding', Helpers.formatCurrency(_totalBalance), AppColors.error),
-                const SizedBox(height: 8),
-                _finRow('Expenses', Helpers.formatCurrency(_totalExpenses), AppColors.red),
-                const SizedBox(height: 8),
-                _finRow('Est. Profit', Helpers.formatCurrency(_estimatedProfit),
-                    _estimatedProfit >= 0 ? AppColors.success : AppColors.error),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _finRow(String label, String value, Color valueColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textMedium)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: valueColor)),
-      ],
-    );
-  }
-
-  Widget _buildInventoryAssets() {
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: () => _navigateAndRefresh('/inventory'),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.purple.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.purple.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        PremiumCard(
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.inventory_2, size: 18, color: AppColors.purple),
-                      const SizedBox(width: 6),
-                      const Text('Inventory', style: TextStyle(fontSize: 13, color: AppColors.purple, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text('$_inventoryItemCount items', style: const TextStyle(fontSize: 12, color: AppColors.textMedium)),
-                  Text(Helpers.formatCurrency(_totalInventoryValue), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.purple)),
+                  const Text('Collection Rate',
+                      style: TextStyle(fontSize: 13, color: AppColors.textMedium)),
+                  Text('${_collectionRate.toStringAsFixed(0)}%',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
                 ],
               ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: InkWell(
-            onTap: () => _navigateAndRefresh('/assets'),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.teal.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.teal.withOpacity(0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.devices, size: 18, color: AppColors.teal),
-                      SizedBox(width: 6),
-                      Text('Assets', style: TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w600)),
-                    ],
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: _collectionRate / 100,
+                  backgroundColor: AppColors.lavender,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _collectionRate >= 80 ? AppColors.success
+                        : _collectionRate >= 50 ? AppColors.warning : AppColors.error,
                   ),
-                  const SizedBox(height: 8),
-                  Text('$_assetCount items', style: const TextStyle(fontSize: 12, color: AppColors.textMedium)),
-                  Text(Helpers.formatCurrency(_totalAssetValue), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.teal)),
-                ],
+                  minHeight: 8,
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              _finRow('Outstanding', Helpers.formatCurrency(_unpaidBalance), AppColors.error),
+              _finRow('Expenses', Helpers.formatCurrency(_totalExpenses), AppColors.orange),
+              _finRow('Est. Profit', Helpers.formatCurrency(_estimatedProfit),
+                  _estimatedProfit >= 0 ? AppColors.success : AppColors.error),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildBusinessFinance() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
+        // Inventory & Assets row
+        Row(
           children: [
-            Icon(Icons.account_balance_wallet, size: 18, color: AppColors.blue),
-            SizedBox(width: 6),
-            Text(
-              'Business Finance',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+            Expanded(
+              child: _miniStat(Icons.inventory_2, 'Inventory', '$_inventoryItemCount items',
+                  Helpers.formatCurrency(_totalInventoryValue), AppColors.purple,
+                  () => _nav('/inventory')),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _miniStat(Icons.devices, 'Assets', '$_assetCount items',
+                  Helpers.formatCurrency(_totalAssetValue), AppColors.teal,
+                  () => _nav('/assets')),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                _financeActionRow(
-                  Icons.account_balance_wallet,
-                  'Partner Balances',
-                  'View capital & balance per partner',
-                  AppColors.blue,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PartnerBalancesScreen()),
-                  ).then((_) => _loadDashboard()),
-                ),
-                const Divider(height: 1, indent: 52),
-                _financeActionRow(
-                  Icons.add_circle,
-                  'Add Capital',
-                  'Record a capital transaction',
-                  AppColors.green,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AddCapitalScreen()),
-                  ).then((_) => _loadDashboard()),
-                ),
-                const Divider(height: 1, indent: 52),
-                _financeActionRow(
-                  Icons.receipt_long,
-                  'Record Expense',
-                  'Record rent, salary, supplies & more',
-                  AppColors.orange,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AddSpendingScreen()),
-                  ).then((_) => _loadDashboard()),
-                ),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _financeActionRow(
-      IconData icon, String label, String subtitle, Color color, VoidCallback onTap) {
-    return InkWell(
+  Widget _finRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textMedium)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(IconData icon, String title, String subtitle, String value, Color color, VoidCallback onTap) {
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 36,
@@ -613,26 +510,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 20, color: color),
+              child: Icon(icon, size: 18, color: color),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMedium),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 14, color: color.withOpacity(0.5)),
+            const SizedBox(height: 10),
+            Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+            Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
           ],
         ),
       ),
@@ -643,37 +527,127 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Quick Actions / فوری اقدامات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        _sectionTitle('Quick Actions'),
         const SizedBox(height: 12),
-        BigActionButton(
-          label: 'New Order', urduLabel: 'نیا آرڈر', icon: Icons.content_cut, color: AppColors.green,
-          onTap: () => _navigateAndRefresh('/new-order'),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.95,
+          children: [
+            _actionTile(Icons.content_cut, 'New Order', AppColors.primary, () => _nav('/new-order')),
+            _actionTile(Icons.list_alt, 'Orders', AppColors.blue, () => _nav('/today-orders')),
+            _actionTile(Icons.payments, 'Payments', AppColors.success, () => _nav('/payments')),
+            _actionTile(Icons.inventory_2, 'Inventory', AppColors.purple, () => _nav('/inventory')),
+            _actionTile(Icons.devices, 'Assets', AppColors.teal, () => _nav('/assets')),
+            _actionTile(Icons.receipt_long, 'Expenses', AppColors.orange, () => _nav('/expenses')),
+          ],
         ),
+      ],
+    );
+  }
+
+  Widget _actionTile(IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CategoryIcon(icon: icon, color: color, size: 50),
+            const SizedBox(height: 10),
+            Text(label, style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBusinessFinance() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Business Finance', icon: Icons.account_balance_wallet, iconColor: AppColors.purpleBlue),
         const SizedBox(height: 10),
-        BigActionButton(
-          label: "Today's Orders", urduLabel: 'آج کے آرڈرز', icon: Icons.list_alt, color: AppColors.blue,
-          onTap: () => _navigateAndRefresh('/today-orders'),
+        PremiumCard(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+          child: Column(
+            children: [
+              _financeRow(Icons.account_balance_wallet, 'Partner Balances',
+                  'View capital & balance', AppColors.blue, () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnerBalancesScreen()))
+                    .then((_) => _loadDashboard());
+              }),
+              Divider(height: 1, indent: 60, endIndent: 16, color: Colors.grey.shade100),
+              _financeRow(Icons.add_circle_outline, 'Add Capital',
+                  'Record capital transaction', AppColors.success, () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AddCapitalScreen()))
+                    .then((_) => _loadDashboard());
+              }),
+              Divider(height: 1, indent: 60, endIndent: 16, color: Colors.grey.shade100),
+              _financeRow(Icons.receipt_long_outlined, 'Record Expense',
+                  'Rent, salary, supplies', AppColors.orange, () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSpendingScreen()))
+                    .then((_) => _loadDashboard());
+              }),
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
-        BigActionButton(
-          label: 'Payments', urduLabel: 'ادائیگیاں', icon: Icons.payments, color: AppColors.orange,
-          onTap: () => _navigateAndRefresh('/payments'),
+      ],
+    );
+  }
+
+  Widget _financeRow(IconData icon, String title, String sub, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: color),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.textMedium)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textLight),
+          ],
         ),
-        const SizedBox(height: 10),
-        BigActionButton(
-          label: 'Inventory', urduLabel: 'سامان', icon: Icons.inventory_2, color: AppColors.purple,
-          onTap: () => _navigateAndRefresh('/inventory'),
-        ),
-        const SizedBox(height: 10),
-        BigActionButton(
-          label: 'Assets', urduLabel: 'اثاثے', icon: Icons.devices, color: AppColors.teal,
-          onTap: () => _navigateAndRefresh('/assets'),
-        ),
-        const SizedBox(height: 10),
-        BigActionButton(
-          label: 'Expenses', urduLabel: 'اخراجات', icon: Icons.receipt_long, color: AppColors.red,
-          onTap: () => _navigateAndRefresh('/expenses'),
-        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title, {IconData? icon, Color? iconColor}) {
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: iconColor ?? AppColors.primary),
+          const SizedBox(width: 6),
+        ],
+        Text(title, style: const TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
       ],
     );
   }
