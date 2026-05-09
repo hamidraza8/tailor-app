@@ -22,7 +22,6 @@ public class OrderService
     {
         var query = _db.Orders
             .Include(o => o.Customer)
-            .Include(o => o.Photos)
             .AsQueryable();
 
         if (from.HasValue) query = query.Where(o => o.OrderDate >= from.Value);
@@ -31,6 +30,19 @@ public class OrderService
         if (customerId.HasValue) query = query.Where(o => o.CustomerId == customerId.Value);
 
         var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+
+        // Load photos from FileAttachments (polymorphic relationship)
+        var orderIds = orders.Select(o => o.Id).ToList();
+        var files = await _db.FileAttachments
+            .Where(f => f.EntityId.HasValue && orderIds.Contains(f.EntityId.Value) && f.EntityType == "Order")
+            .ToListAsync();
+        var filesByOrder = files.GroupBy(f => f.EntityId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var o in orders)
+        {
+            if (filesByOrder.TryGetValue(o.Id, out var orderFiles))
+                o.Photos = orderFiles;
+        }
+
         return orders.Select(MapOrder).ToList();
     }
 
@@ -47,12 +59,18 @@ public class OrderService
     {
         var order = await _db.Orders
             .Include(o => o.Customer)
-            .Include(o => o.Photos)
             .Include(o => o.Payments)
             .Include(o => o.InventoryUsages).ThenInclude(u => u.InventoryItem)
             .Include(o => o.StatusHistory)
             .FirstOrDefaultAsync(o => o.Id == id);
-        return order == null ? null : MapOrder(order);
+        if (order == null) return null;
+
+        // Load photos from FileAttachments (polymorphic relationship)
+        order.Photos = await _db.FileAttachments
+            .Where(f => f.EntityId == id && f.EntityType == "Order")
+            .ToListAsync();
+
+        return MapOrder(order);
     }
 
     public async Task<OrderDto> CreateOrderAsync(CreateOrderRequest request, Guid userId)
