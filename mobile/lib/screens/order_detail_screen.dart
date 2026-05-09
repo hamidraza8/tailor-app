@@ -120,12 +120,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _whatsApp() async {
-    if (_order?.customerPhone == null) return;
+    if (_order?.customerPhone == null || _order!.customerPhone!.isEmpty) return;
     final cleaned = Helpers.phoneForWhatsApp(_order!.customerPhone!);
     final uri = Uri.parse('https://wa.me/$cleaned');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -145,15 +143,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final order = _order!;
 
+    final invoiceArg = DataService.isOnlineMode ? order.serverId : order.id;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${order.orderType} Order'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: Text('${order.orderType} Order',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () =>
-                Navigator.pushNamed(context, '/invoice', arguments: order.id),
-          ),
+          if (invoiceArg != null)
+            IconButton(
+              icon: const Icon(Icons.receipt_long),
+              onPressed: () =>
+                  Navigator.pushNamed(context, '/invoice', arguments: invoiceArg),
+            ),
           if (_isAdmin)
             IconButton(
               icon: const Icon(Icons.edit),
@@ -263,13 +267,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       _quickAction(Icons.chat, 'WhatsApp',
                           const Color(0xFF25D366), _whatsApp),
                       const SizedBox(width: 8),
-                      _quickAction(Icons.receipt_long, 'Invoice',
-                          AppColors.blue, () {
-                        Navigator.pushNamed(context, '/invoice',
-                            arguments: order.id);
-                      }),
+                      if (invoiceArg != null)
+                        _quickAction(Icons.receipt_long, 'Invoice',
+                            AppColors.blue, () {
+                          Navigator.pushNamed(context, '/invoice',
+                              arguments: invoiceArg);
+                        }),
                     ],
                   ),
+
+                  // Voice notes — show prominently
+                  if (order.voiceNotes.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Text('Voice Notes',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    ...order.voiceNotes.map((vn) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: VoiceNotePlayer(
+                              url: 'https://torin.pk${vn['url']}'),
+                        )),
+                  ],
                   const SizedBox(height: 20),
 
                   // Amount card
@@ -329,19 +347,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     _detailRow('Design Notes', order.notes!),
                   if (order.specialInstructions != null && order.specialInstructions!.isNotEmpty)
                     _detailRow('Special Instructions', order.specialInstructions!),
-
-                  // Voice notes
-                  if (order.voiceNotes.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text('Voice Notes',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    ...order.voiceNotes.map((vn) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: VoiceNotePlayer(
-                              url: 'https://torin.pk${vn['url']}'),
-                        )),
-                  ],
 
                   // Measurements section
                   if (_measurement != null) ...[

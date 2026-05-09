@@ -167,10 +167,14 @@ class TailorApp extends StatelessWidget {
             }
           }
           if (settings.name == '/invoice') {
-            final orderId = settings.arguments as int?;
-            if (orderId != null) {
+            final arg = settings.arguments;
+            if (arg is int) {
               return MaterialPageRoute(
-                builder: (_) => InvoiceScreen(orderId: orderId),
+                builder: (_) => InvoiceScreen(orderId: arg),
+              );
+            } else if (arg is String) {
+              return MaterialPageRoute(
+                builder: (_) => InvoiceScreen(serverOrderId: arg),
               );
             }
           }

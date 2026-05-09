@@ -5,13 +5,16 @@ import 'package:printing/printing.dart';
 import '../models/order.dart';
 import '../models/payment.dart';
 import '../services/database_service.dart';
+import '../services/data_service.dart';
+import '../services/api_service.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 
 class InvoiceScreen extends StatefulWidget {
-  final int orderId;
+  final int? orderId;
+  final String? serverOrderId;
 
-  const InvoiceScreen({super.key, required this.orderId});
+  const InvoiceScreen({super.key, this.orderId, this.serverOrderId});
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -29,10 +32,23 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   }
 
   Future<void> _loadData() async {
-    final order = await DatabaseService.getOrderById(widget.orderId);
+    Order? order;
     List<Payment> payments = [];
-    if (order != null) {
-      payments = await DatabaseService.getPaymentsByOrder(order.id!);
+    if (DataService.isOnlineMode && widget.serverOrderId != null) {
+      order = await DataService.getOrderByServerId(widget.serverOrderId!);
+      if (order != null) {
+        final result = await ApiService.get('/payments/by-order/${widget.serverOrderId}');
+        if (result['success'] == true && result['data'] is List) {
+          payments = (result['data'] as List)
+              .map((e) => Payment.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } else if (widget.orderId != null) {
+      order = await DatabaseService.getOrderById(widget.orderId!);
+      if (order != null) {
+        payments = await DatabaseService.getPaymentsByOrder(order.id!);
+      }
     }
     setState(() {
       _order = order;
