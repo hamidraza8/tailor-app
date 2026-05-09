@@ -262,12 +262,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  DateFormat('EEEE, dd MMM yyyy').format(DateTime.now()),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 12,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      DateFormat('EEEE, dd MMM yyyy').format(DateTime.now()),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'K. Fabrics',
+                      style: TextStyle(
+                        color: AppColors.gold.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

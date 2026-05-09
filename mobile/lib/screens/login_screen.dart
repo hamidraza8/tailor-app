@@ -81,31 +81,53 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 76,
+                        height: 76,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(24),
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: AppColors.gold.withOpacity(0.5),
+                            width: 1.5,
+                          ),
                         ),
-                        child: const Icon(Icons.content_cut,
-                            color: Colors.white, size: 40),
+                        child: Center(
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [AppColors.gold, AppColors.goldLight],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ).createShader(bounds),
+                            child: const Text(
+                              'K',
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                fontStyle: FontStyle.italic,
+                                height: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       const Text(
-                        'TailorPro',
+                        'K. Fabrics & Stitching',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 28,
+                          fontSize: 22,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Smart Tailor Management',
+                        'Ladies Specialist',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 13,
+                          color: AppColors.gold.withOpacity(0.9),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.5,
                         ),
                       ),
                     ],

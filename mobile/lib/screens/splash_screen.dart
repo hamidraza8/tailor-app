@@ -71,34 +71,64 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // K Logo
                 Container(
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: AppColors.gold.withOpacity(0.5),
+                      width: 2,
+                    ),
                   ),
-                  child: const Icon(Icons.content_cut,
-                      color: Colors.white, size: 48),
+                  child: Center(
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [AppColors.gold, AppColors.goldLight],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'K',
+                        style: TextStyle(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          fontStyle: FontStyle.italic,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 const Text(
-                  'TailorPro',
+                  'K. Fabrics & Stitching',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Smart Tailor Management',
+                  'Ladies Specialist',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: AppColors.gold.withOpacity(0.9),
                     fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'لیڈیز اسپیشلسٹ',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 48),

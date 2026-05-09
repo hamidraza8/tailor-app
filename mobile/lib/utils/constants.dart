@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary purple palette
+  // Primary palette — deep purple + gold
   static const Color primary = Color(0xFF7B1FA2);
   static const Color primaryDark = Color(0xFF4A148C);
   static const Color primaryLight = Color(0xFFAB47BC);
   static const Color accent = Color(0xFFCE93D8);
   static const Color purpleBlue = Color(0xFF5C6BC0);
   static const Color lavender = Color(0xFFF3E5F5);
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color goldLight = Color(0xFFF5E6B8);
+  static const Color goldDark = Color(0xFFB8960C);
 
   // Surfaces
   static const Color background = Color(0xFFF8F5FC);

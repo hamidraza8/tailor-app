@@ -44,7 +44,7 @@ class TailorApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'TailorPro',
+        title: 'K. Fabrics & Stitching',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primaryColor: AppColors.primary,
