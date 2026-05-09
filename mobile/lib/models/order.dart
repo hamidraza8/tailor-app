@@ -133,7 +133,10 @@ class Order {
     for (final f in allFiles) {
       final file = f as Map<String, dynamic>;
       final ct = file['contentType']?.toString() ?? '';
-      if (ct.startsWith('audio/')) {
+      final fn = file['fileName']?.toString() ?? '';
+      final isAudio = ct.startsWith('audio/') ||
+          fn.endsWith('.aac') || fn.endsWith('.m4a') || fn.endsWith('.mp3') || fn.endsWith('.wav');
+      if (isAudio) {
         voiceFiles.add(file);
       } else {
         photoFiles.add(file);
