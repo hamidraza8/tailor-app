@@ -88,12 +88,11 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
 
     final Map<String, double> balances = {};
     if (balanceResult['success'] == true) {
-      final data = balanceResult['data'];
+      // partnerBalances is at top level (merged by _parseResponse)
+      final pbList = balanceResult['partnerBalances'] ?? balanceResult['data'];
       List items = [];
-      if (data is List) {
-        items = data;
-      } else if (data is Map && data['partnerBalances'] is List) {
-        items = data['partnerBalances'] as List;
+      if (pbList is List) {
+        items = pbList;
       }
       for (final item in items) {
         final m = item as Map;
