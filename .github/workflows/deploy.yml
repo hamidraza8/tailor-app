@@ -19,6 +19,10 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
+
+            # Ensure shared Docker network exists
+            docker network inspect web >/dev/null 2>&1 || docker network create web
+
             cd /opt/tailor-application
 
             if [ ! -d .git ]; then

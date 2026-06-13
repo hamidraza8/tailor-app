@@ -53,7 +53,16 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/ssl/certs/torin.pk.crt:/etc/ssl/certs/torin.pk.crt:ro
       - /etc/ssl/private/torin.pk.key:/etc/ssl/private/torin.pk.key:ro
+      - /etc/ssl/certs/saja.torin.pk.crt:/etc/ssl/certs/saja.torin.pk.crt:ro
+      - /etc/ssl/private/saja.torin.pk.key:/etc/ssl/private/saja.torin.pk.key:ro
+    networks:
+      - default
+      - web
 
 volumes:
   postgres_data:
   uploads_data:
+
+networks:
+  web:
+    external: true
